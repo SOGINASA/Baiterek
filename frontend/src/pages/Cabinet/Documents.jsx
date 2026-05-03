@@ -1,178 +1,269 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import {
-  FolderOpen, Upload, Search, FileText, FileImage,
-  FileSpreadsheet, File, Download, Eye, PenLine,
-  CheckCircle2, Clock, AlertCircle, Trash2,
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../store/authStore';
+import { useApplicationsStore } from '../../store/applicationsStore';
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
+import { Spinner } from '../ui/Spinner';
 
-const FILE_ICONS = {
-  pdf:  { icon: FileText,        color: 'text-red-500',   bg: 'bg-red-50' },
-  docx: { icon: FileText,        color: 'text-blue-600',  bg: 'bg-blue-50' },
-  xlsx: { icon: FileSpreadsheet, color: 'text-green-600', bg: 'bg-green-50' },
-  jpg:  { icon: FileImage,       color: 'text-purple-600',bg: 'bg-purple-50' },
-  png:  { icon: FileImage,       color: 'text-purple-600',bg: 'bg-purple-50' },
-  other:{ icon: File,            color: 'text-primary/40',bg: 'bg-primary/5' },
-};
+export default function Documents() {
+  const { user } = useAuthStore();
+  const { applications, loading, error, fetchApplications } = useApplicationsStore();
+  const navigate = useNavigate();
+  
+  const [selectedApplicationId, setSelectedApplicationId] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
-const DOC_STATUSES = {
-  signed:   { label: 'Подписан',         color: 'text-green-600 bg-green-50 border-green-200', icon: CheckCircle2 },
-  pending:  { label: 'Ожидает подписи',  color: 'text-amber-600 bg-amber-50 border-amber-200', icon: Clock },
-  review:   { label: 'На согласовании',  color: 'text-blue-600 bg-blue-50 border-blue-200',    icon: AlertCircle },
-};
+  useEffect(() => {
+    fetchApplications();
+  }, [fetchApplications]);
 
-const MOCK_DOCS = [
-  { id: 1, name: 'Заявка_ZAY-2024-00342.pdf',          ext: 'pdf',  size: '1.2 МБ', date: '14.01.2025', app: 'ZAY-2024-00342', status: 'signed' },
-  { id: 2, name: 'Бизнес-план_2025.docx',              ext: 'docx', size: '3.5 МБ', date: '14.01.2025', app: 'ZAY-2024-00342', status: 'pending' },
-  { id: 3, name: 'Финансовая_отчётность_2024.xlsx',    ext: 'xlsx', size: '890 КБ', date: '28.12.2024', app: 'ZAY-2024-00298', status: 'signed' },
-  { id: 4, name: 'Договор_гарантии.pdf',               ext: 'pdf',  size: '2.1 МБ', date: '28.12.2024', app: 'ZAY-2024-00298', status: 'review' },
-  { id: 5, name: 'Копия_свидетельства.jpg',            ext: 'jpg',  size: '645 КБ', date: '05.12.2024', app: 'ZAY-2024-00251', status: 'signed' },
-  { id: 6, name: 'Акт_приёма_оборудования.pdf',        ext: 'pdf',  size: '780 КБ', date: '05.12.2024', app: 'ZAY-2024-00251', status: 'pending' },
-];
+  if (loading && applications.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface">
+        <Spinner />
+      </div>
+    );
+  }
 
-const getFileIcon = (ext) => FILE_ICONS[ext] || FILE_ICONS.other;
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface p-6">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-destructive mb-4">
+            Ошибка загрузки заявок
+          </h2>
+          <p className="text-primary/60">{error}</p>
+          <Button onClick={() => fetchApplications()}>
+            Попробовать снова
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
-export default function CabinetDocuments() {
-  const [search, setSearch] = useState('');
-  const [dragging, setDragging] = useState(false);
-  const [filterStatus, setFilterStatus] = useState('all');
+  // Get all documents from all applications
+  const allDocuments = applications.flatMap(app => 
+    app.documents.map(doc => ({
+      ...doc,
+      applicationTitle: app.service?.title || 'Неизвестная услуга',
+      applicationId: app.id
+    }))
+  ).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-  const filtered = MOCK_DOCS.filter(d => {
-    const matchSearch = d.name.toLowerCase().includes(search.toLowerCase()) || d.app.includes(search);
-    const matchStatus = filterStatus === 'all' || d.status === filterStatus;
-    return matchSearch && matchStatus;
-  });
-
-  const pendingSign = MOCK_DOCS.filter(d => d.status === 'pending');
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (!selectedApplicationId) {
+      alert('Пожалуйста, выберите заявку для загрузки документа');
+      return;
+    }
+    
+    // In a real app, this would upload to the backend
+    // For demo, we'll simulate upload
+    setUploading(true);
+    setUploadProgress(0);
+    
+    const uploadSimulation = setInterval(() => {
+      setUploadProgress(prev => {
+        const newProgress = prev + 10;
+        if (newProgress >= 100) {
+          clearInterval(uploadSimulation);
+          setUploading(false);
+          setUploadProgress(0);
+          e.target.value = ''; // Reset file input
+          alert('Документ успешно загружен!');
+          // In a real app, we would refetch applications here
+          return 100;
+        }
+        return newProgress;
+      });
+    }, 200);
+  };
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold text-primary">Документы</h1>
-        <p className="text-primary/45 text-sm mt-0.5">Управление документами по вашим заявкам</p>
-      </div>
-
-      {/* Pending signature alert */}
-      {pendingSign.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl"
-        >
-          <Clock size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-sm font-semibold text-amber-800">
-              {pendingSign.length} {pendingSign.length === 1 ? 'документ ожидает' : 'документа ожидают'} вашей подписи
-            </p>
-            <p className="text-xs text-amber-600 mt-0.5">
-              {pendingSign.map(d => d.name).join(', ')}
-            </p>
-          </div>
-          <button className="ml-auto flex-shrink-0 flex items-center gap-1.5 text-xs font-semibold text-amber-800 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-3 py-1.5 rounded-lg transition-colors">
-            <PenLine size={12} /> Подписать
-          </button>
-        </motion.div>
-      )}
-
-      {/* Upload zone */}
-      <div
-        onDragOver={e => { e.preventDefault(); setDragging(true); }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={e => { e.preventDefault(); setDragging(false); }}
-        className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-200 cursor-pointer ${
-          dragging
-            ? 'border-accent bg-accent/6'
-            : 'border-primary/15 hover:border-accent/40 hover:bg-accent/3'
-        }`}
-      >
-        <Upload size={22} className={`mx-auto mb-2 ${dragging ? 'text-accent' : 'text-primary/30'}`} />
-        <p className="text-sm font-medium text-primary/60">Перетащите файлы или <span className="text-accent underline cursor-pointer">выберите</span></p>
-        <p className="text-xs text-primary/30 mt-1">PDF, DOCX, XLSX, JPG, PNG — до 25 МБ</p>
-      </div>
-
-      {/* Filters + search */}
-      <div className="bg-surface border border-primary/8 rounded-2xl overflow-hidden">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-primary/8 flex-wrap">
-          {[
-            { key: 'all',     label: 'Все документы' },
-            { key: 'pending', label: 'Ожидают подписи' },
-            { key: 'review',  label: 'На согласовании' },
-            { key: 'signed',  label: 'Подписанные' },
-          ].map(f => (
-            <button
-              key={f.key}
-              onClick={() => setFilterStatus(f.key)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
-                filterStatus === f.key ? 'bg-accent text-white' : 'text-primary/55 hover:bg-primary/6'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-          <div className="ml-auto relative">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-primary/35" />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Поиск..."
-              className="pl-7 pr-3 py-1.5 text-xs bg-bg border border-primary/10 rounded-full focus:outline-none focus:border-accent/50 transition-colors w-36"
-            />
-          </div>
+    <div className="min-h-screen bg-surface">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-primary">Мои документы</h1>
+          <p className="text-primary/55 mt-1">
+            Управление документами, прикрепленными к вашим заявкам
+          </p>
         </div>
-
-        {/* Documents list */}
-        <div className="divide-y divide-primary/5">
-          {filtered.length === 0 && (
-            <div className="py-14 text-center text-primary/35 text-sm">Документы не найдены</div>
-          )}
-          {filtered.map((doc, i) => {
-            const FI = getFileIcon(doc.ext);
-            const FIcon = FI.icon;
-            const S = DOC_STATUSES[doc.status];
-            const SIcon = S.icon;
-            return (
-              <motion.div
-                key={doc.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: i * 0.03 }}
-                className="flex items-center gap-4 px-5 py-4 hover:bg-primary/2 transition-colors group"
+        
+        {/* Upload Section */}
+        <div className="bg-bg border border-primary/5 rounded-lg mb-8 overflow-hidden">
+          <div className="px-5 py-4 border-b border-primary/5">
+            <h2 className="font-medium text-primary">Загрузить документ</h2>
+          </div>
+          
+          <div className="px-5 py-5 space-y-5">
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-primary mb-2">
+                Выберите заявку
+              </label>
+              <select
+                value={selectedApplicationId || ''}
+                onChange={(e) => setSelectedApplicationId(e.target.value)}
+                className="w-full rounded-lg border bg-surface px-4 py-2.5 text-sm placeholder:text-primary/40 outline-none
+                  transition-[border-color,box-shadow] duration-150
+                  border-primary/20 focus:border-accent focus:ring-2 focus:ring-accent/20"
               >
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${FI.bg}`}>
-                  <FIcon size={16} className={FI.color} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-primary truncate">{doc.name}</p>
-                  <div className="flex items-center gap-2 mt-0.5 text-xs text-primary/35">
-                    <span>{doc.size}</span>
-                    <span>·</span>
-                    <span>{doc.date}</span>
-                    <span>·</span>
-                    <span className="text-primary/30">#{doc.app}</span>
-                  </div>
-                </div>
-
-                <span className={`flex items-center gap-1 px-2 py-0.5 border rounded-full text-xs font-medium flex-shrink-0 ${S.color}`}>
-                  <SIcon size={10} />
-                  {S.label}
-                </span>
-
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button className="p-1.5 rounded-lg hover:bg-primary/8 text-primary/40 hover:text-primary transition-colors">
-                    <Eye size={14} />
-                  </button>
-                  <button className="p-1.5 rounded-lg hover:bg-primary/8 text-primary/40 hover:text-primary transition-colors">
-                    <Download size={14} />
-                  </button>
-                  {doc.status === 'pending' && (
-                    <button className="p-1.5 rounded-lg hover:bg-amber-50 text-amber-500 hover:text-amber-600 transition-colors">
-                      <PenLine size={14} />
-                    </button>
+                <option value="">Выберите заявку...</option>
+                {applications.map((app) => (
+                  <option key={app.id} value={app.id}>
+                    #{app.id} - {app.service?.title || 'Неизвестная услуга'}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            {selectedApplicationId && (
+              <>
+                <label className="block text-sm font-medium text-primary mb-2">
+                  Выберите файл для загрузки
+                </label>
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt"
+                    onChange={handleFileChange}
+                    className="w-full text-primary/60"
+                  >
+                    Выбрать файл
+                  </input>
+                  {uploading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                      <div className="text-center bg-white rounded-lg p-6 max-w-xs">
+                        <div className="mb-4">
+                          <div className="w-12 h-12 border-4 border-accent/50 rounded-full border-t-accent animate-spin" />
+                        </div>
+                        <p className="font-medium text-primary">Загрузка...</p>
+                        {uploadProgress > 0 && (
+                          <div className="mt-4">
+                            <div className="w-full bg-primary/10 rounded-full h-2.5">
+                              <div className={`bg-accent h-2.5 rounded-full transition-all duration-200`} 
+                                   style={{ width: `${uploadProgress}%` }}></div>
+                            </div>
+                            <p className="mt-2 text-sm text-primary/60">{uploadProgress}%</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
-              </motion.div>
-            );
-          })}
+                
+                <p className="mt-2 text-xs text-primary/50">
+                  Поддерживаемые форматы: PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG, TXT
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+        
+        {/* Documents List */}
+        <div className="bg-bg border border-primary/5 rounded-lg overflow-hidden">
+          <div className="px-5 py-4 border-b border-primary/5">
+            <h2 className="font-medium text-primary">Список документов</h2>
+          </div>
+          
+          {allDocuments.length === 0 ? (
+            <div className="px-5 py-12 text-center">
+              <p className="text-primary/50">
+                У вас пока нет загруженных документов.
+              </p>
+              <p className="text-primary/50 mt-2">
+                Прикрепите документы к своим заявкам для прохождения процедуры рассмотрения.
+              </p>
+            </div>
+          ) : (
+            <div className="px-5 py-4 space-y-4">
+              {allDocuments.map((doc) => (
+                <div key={doc.id} className="border border-primary/5 rounded-lg overflow-hidden">
+                  <div className="px-4 py-3 flex justify-between items-center border-b border-primary/5">
+                    <div className="flex items-center space-x-3 flex-1">
+                      <div className="w-5 h-5 flex-shrink-0">
+                        {/* Document type icon */}
+                        <span className="text-primary/60 flex items-center justify-center">
+                          {doc.file_type.toUpperCase() === 'PDF' ? '📄' : 
+                           doc.file_type.toUpperCase() === 'DOC' || doc.file_type.toUpperCase() === 'DOCX' ? '📝' :
+                           doc.file_type.toUpperCase() === 'XLS' || doc.file_type.toUpperCase() === 'XLSX' ? '📊' :
+                           doc.file_type.toUpperCase() === 'JPG' || doc.file_type.toUpperCase() === 'JPEG' || doc.file_type.toUpperCase() === 'PNG' ? '🖼️' : 
+                           '📎'}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-primary truncate max-w-xs">{doc.file_name}</p>
+                        <p className="text-primary/50 text-sm">
+                          {(doc.file_size / 1024 / 1024).toFixed(2)} МБ • 
+                          {new Date(doc.created_at).toLocaleDateString('ru-KZ')}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-xs space-x-2">
+                      <span className={`px-2 py-0.5 rounded text-xs ${
+                        doc.status === 'approved' ? 'bg-green-100 text-green-800' :
+                        doc.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                        doc.status === 'signed' ? 'bg-blue-100 text-blue-800' :
+                        doc.status === 'pending' ? 'bg-primary/10 text-primary' :
+                        'bg-primary/10 text-primary'
+                      }`}>
+                        {doc.status
+                          .charAt(0)
+                          .toUpperCase() + doc.status.slice(1)}
+                      </span>
+                      {doc.is_signed && (
+                        <span className="ml-2 text-primary/60">✓ Подписано</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="px-4 py-3">
+                    <div className="flex items-center space-x-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          // In a real app, this would trigger download
+                          window.open(`/api/documents/${doc.id}/download`, '_blank');
+                        }}
+                      >
+                        Скачать
+                      </Button>
+                      
+                      {!doc.is_signed && (
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            // In a real app, this would trigger e-signature process
+                            alert('Функция электронной подписи будет доступна в будущих версиях');
+                          }}
+                        >
+                          Подписать
+                        </Button>
+                      )}
+                      
+                      {doc.uploaded_by_user && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            if (window.confirm('Вы уверены, что хотите удалить этот документ?')) {
+                              // In a real app, this would be a DELETE API call
+                              alert('Документ успешно удален!');
+                            }
+                          }}
+                        >
+                          Удалить
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

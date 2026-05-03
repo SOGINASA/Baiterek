@@ -1,0 +1,314 @@
+import os
+import json
+import time
+import signal
+import sys
+
+# Подхватываем backend/.env до чтения любых os.environ
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
+
+# Gunicorn configuration for WebSocket support
+def on_exit(sig, frame):
+    """Handle graceful shutdown"""
+    sys.exit(0)
+
+signal.signal(signal.SIGTERM, on_exit)
+
+# Set gunicorn timeout (only effective when running under gunicorn)
+if __name__ != "__main__":
+    import multiprocessing
+    
+    # Configure gunicorn through environment or defaults
+    GRACEFUL_TIMEOUT = os.environ.get("GRACEFUL_TIMEOUT", "120")
+    KEEPALIVE_TIMEOUT = os.environ.get("KEEPALIVE_TIMEOUT", "120")
+
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+from flask_migrate import Migrate
+from flask_jwt_extended import JWTManager, decode_token
+from flask_sock import Sock
+from config import Config, DATABASE_DIR
+from models import db, User, UserGoals, Notification
+from seed_data import seed_all
+from flask_jwt_extended.exceptions import JWTExtendedException
+from werkzeug.exceptions import HTTPException
+from services import websocket_service
+from services.scheduler_service import init_scheduler
+
+# Инициализация расширений
+migrate = Migrate()
+jwt = JWTManager()
+sock = Sock()
+
+
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(Config)
+    CORS(app, supports_credentials=True, origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "https://food-track-beta.vercel.app",
+        "https://foodtrack.beast-inside.kz"
+    ])
+
+    # Создаём папку для БД, если её нет
+    os.makedirs(DATABASE_DIR, exist_ok=True)
+
+    # Инициализация расширений
+    db.init_app(app)
+    migrate.init_app(app, db)
+    jwt.init_app(app)
+    sock.init_app(app)
+
+    # Инициализация БД и заполнение данными при первом запуске
+    with app.app_context():
+        db.create_all()
+        # Проверяем, есть ли уже данные в БД
+        if User.query.first() is None:
+            try:
+                seed_all()
+            except Exception as e:
+                db.session.rollback()
+                print(f"[WARN] Seed failed: {e}")
+        # Накатываем миграции для новых колонок
+        try:
+            from routes.challenges import _ensure_pair_streak_columns
+            _ensure_pair_streak_columns()
+        except Exception as e:
+            print(f"[WARN] challenges migration: {e}")
+
+    # Импорт всех блюпринтов
+    from routes import auth_bp
+    from routes.oauth import oauth_bp
+    from routes.meals import meals_bp
+    from routes.goals import goals_bp
+    from routes.analytics import analytics_bp
+    from routes.progress import progress_bp
+    from routes.groups import groups_bp
+    from routes.meal_plans import meal_plans_bp
+    from routes.recipes import recipes_bp
+    from routes.tips import tips_bp
+    from routes.friends import friends_bp
+    from routes.fridge import fridge_bp
+    from routes.water import water_bp
+    from routes.notifications import notifications_bp
+    from routes.coins import coins_bp
+    from routes.webauthn import webauthn_bp
+    from routes.feedback import feedback_bp
+    from routes.admin import admin_bp
+    from routes.challenges import challenges_bp
+
+    # Регистрация всех блюпринтов
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(oauth_bp, url_prefix='/api/auth/oauth')
+    app.register_blueprint(meals_bp, url_prefix='/api/meals')
+    app.register_blueprint(goals_bp, url_prefix='/api/goals')
+    app.register_blueprint(analytics_bp, url_prefix='/api/analytics')
+    app.register_blueprint(progress_bp, url_prefix='/api/progress')
+    app.register_blueprint(groups_bp, url_prefix='/api/groups')
+    app.register_blueprint(meal_plans_bp, url_prefix='/api/meal-plans')
+    app.register_blueprint(recipes_bp, url_prefix='/api/recipes')
+    app.register_blueprint(tips_bp, url_prefix='/api/tips')
+    app.register_blueprint(friends_bp, url_prefix='/api/friends')
+    app.register_blueprint(fridge_bp, url_prefix='/api/fridge')
+    app.register_blueprint(water_bp, url_prefix='/api/water')
+    app.register_blueprint(notifications_bp, url_prefix='/api/notifications')
+    app.register_blueprint(coins_bp, url_prefix='/api/coins')
+    app.register_blueprint(webauthn_bp, url_prefix='/api/auth/webauthn')
+    app.register_blueprint(feedback_bp, url_prefix='/api/feedback')
+    app.register_blueprint(admin_bp, url_prefix='/api/admin')
+    app.register_blueprint(challenges_bp, url_prefix='/api')
+
+    # WebSocket endpoint для real-time уведомлений
+    @sock.route('/ws/notifications')
+    def ws_notifications(ws):
+        token = request.args.get('token')
+        if not token:
+            ws.close(1008, 'Token required')
+            return
+
+        try:
+            decoded = decode_token(token)
+            user_id = int(decoded['sub'])
+        except Exception:
+            ws.close(1008, 'Invalid token')
+            return
+
+        # Регистрируем соединение
+        websocket_service.register(user_id, ws)
+
+        try:
+            # Отправляем текущий счётчик непрочитанных
+            count = Notification.query.filter_by(user_id=user_id, is_read=False).count()
+            ws.send(json.dumps({'type': 'unread_count', 'payload': {'count': count}}))
+
+            # Держим соединение открытым, слушаем клиент
+            # Отправляем ping каждые 25 секунд для поддержания соединения
+            last_ping = time.time()
+            while True:
+                data = ws.receive(timeout=60)
+                if data is None:
+                    # Check if we need to send ping
+                    if time.time() - last_ping > 25:
+                        try:
+                            ws.send(json.dumps({'type': 'ping'}))
+                            last_ping = time.time()
+                        except Exception:
+                            break
+                    continue
+                # Клиент может слать ping — отвечаем pong
+                try:
+                    msg = json.loads(data)
+                    if msg.get('type') == 'ping':
+                        ws.send(json.dumps({'type': 'pong'}))
+                        last_ping = time.time()
+                    elif msg.get('type') == 'pong':
+                        last_ping = time.time()
+                except (json.JSONDecodeError, TypeError):
+                    pass
+        except Exception:
+            pass
+        finally:
+            websocket_service.unregister(user_id, ws)
+
+    # Главная страница API
+    @app.route('/api')
+    def api_info():
+        return jsonify({
+            'message': 'FoodTrack API is alive',
+            'version': '1.1.0',
+            'description': 'API для трекинга питания FoodTrack',
+            'endpoints': {
+                'auth': '/api/auth - авторизация и регистрация',
+                'oauth': '/api/auth/oauth - OAuth авторизация',
+                'meals': '/api/meals - управление приёмами пищи',
+                'goals': '/api/goals - цели пользователя и трекинг веса',
+                'analytics': '/api/analytics - статистика и аналитика',
+                'progress': '/api/progress - отслеживание прогресса и изменения веса',
+                'groups': '/api/groups - управление группами и социальные функции',
+                'meal_plans': '/api/meal-plans - планы питания и рецепты',
+                'recipes': '/api/recipes - каталог рецептов',
+                'tips': '/api/tips - советы по питанию',
+                'friends': '/api/friends - управление друзьями',
+                'fridge': '/api/fridge - холодильник и обмен продуктами',
+                'water': '/api/water - трекинг потребления воды',
+                'notifications': '/api/notifications - уведомления',
+                'coins': '/api/coins - монеты и награды',
+            },
+            'websocket': {
+                'notifications': '/ws/notifications - real-time уведомления (требуется token)',
+            }
+        })
+    
+    @app.route('/logo')
+    def logo():
+        return app.send_static_file('white-bg-logo.png')
+
+    # Запуск планировщика напоминаний о приёмах пищи
+    # Scheduler использует file-based lock для предотвращения дубликатов
+    import os as _os
+    if _os.environ.get('WERKZEUG_RUN_MAIN') == 'true' or not app.debug:
+        init_scheduler(app)
+
+    return app
+
+
+app = create_app()
+
+
+# Обработчики ошибок
+@app.errorhandler(422)
+def handle_unprocessable_entity(err):
+    return jsonify({'error': 'Validation error', 'message': str(err)}), 422
+
+
+@app.errorhandler(JWTExtendedException)
+def handle_jwt_error(e):
+    return jsonify({'error': 'JWT Error', 'message': str(e)}), 401
+
+
+@app.errorhandler(HTTPException)
+def handle_http_exception(e):
+    return jsonify({'error': e.code, 'message': e.description}), e.code
+
+
+@jwt.expired_token_loader
+def expired_token_callback(jwt_header, jwt_payload):
+    return jsonify({'error': 'Токен истек'}), 401
+
+
+@jwt.invalid_token_loader
+def invalid_token_callback(error):
+    return jsonify({'error': 'Недействительный токен'}), 401
+
+
+@jwt.unauthorized_loader
+def missing_token_callback(error):
+    return jsonify({'error': 'Требуется авторизация'}), 401
+
+
+# CLI команды
+@app.cli.command()
+def init_db():
+    """Инициализация базы данных с тестовыми данными"""
+    print("Инициализация базы данных...")
+    db.create_all()
+    seed_all()
+    print("База данных инициализирована!")
+
+
+@app.cli.command()
+def create_admin():
+    """Создать администратора"""
+    email = input("Email администратора: ")
+    password = input("Пароль: ")
+    full_name = input("Полное имя: ")
+
+    if User.query.filter_by(email=email).first():
+        print("Пользователь с таким email уже существует")
+        return
+
+    admin = User(full_name=full_name, email=email, user_type='admin', is_verified=True)
+    admin.set_password(password)
+
+    # Создаём цели по умолчанию
+    goals = UserGoals(user_id=admin.id)
+
+    db.session.add(admin)
+    db.session.flush()
+    goals.user_id = admin.id
+    db.session.add(goals)
+    db.session.commit()
+
+    print(f"Администратор {email} создан")
+
+
+@app.cli.command()
+def generate_vapid():
+    """Генерировать VAPID ключи для Web Push"""
+    import base64
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from cryptography.hazmat.backends import default_backend
+
+    private_key = ec.generate_private_key(ec.SECP256R1(), default_backend())
+
+    # Приватный ключ — raw 32 байта в urlsafe base64
+    private_numbers = private_key.private_numbers()
+    private_bytes = private_numbers.private_value.to_bytes(32, 'big')
+    private_key_b64 = base64.urlsafe_b64encode(private_bytes).rstrip(b'=').decode()
+
+    # Публичный ключ — 0x04 + x + y в urlsafe base64
+    pub_numbers = private_key.public_key().public_numbers()
+    x = pub_numbers.x.to_bytes(32, 'big')
+    y = pub_numbers.y.to_bytes(32, 'big')
+    public_bytes = b'\x04' + x + y
+    public_key_b64 = base64.urlsafe_b64encode(public_bytes).rstrip(b'=').decode()
+
+    print("Добавьте в .env файл:")
+    print(f"VAPID_PRIVATE_KEY={private_key_b64}")
+    print(f"VAPID_PUBLIC_KEY={public_key_b64}")
+
+
+if __name__ == '__main__':
+    app.run(debug=True, host="0.0.0.0", port=5252)

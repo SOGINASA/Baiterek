@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useApplicationsStore } from '../../store/applicationsStore';
-import { Button } from '../ui/Button';
-import { Spinner } from '../ui/Spinner';
+import Button from '../../components/ui/Button';
+import Spinner from '../../components/ui/Spinner';
 import { serviceStatusBadge } from '../../utils/helpers';
 
 export default function Applications() {

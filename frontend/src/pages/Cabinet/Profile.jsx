@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { useAuthStore } from '../store/authStore';
-import { authAPI } from '../api/auth';
-import { useNotificationsStore } from '../store/notificationsStore';
-import { Spinner } from '../components/ui/Spinner';
+import Button from '../../components/ui/Button';
+import Input from '../../components/ui/Input';
+import { useAuthStore } from '../../store/authStore';
+import { useNotificationsStore } from '../../store/notificationsStore';
+import Spinner from '../../components/ui/Spinner';
 
 export default function Profile() {
-  const { user, isAuth, login, logout } = useAuthStore();
+  const { user, isAuth, setUser, logout } = useAuthStore();
   const { addNotification } = useNotificationsStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -93,7 +92,7 @@ export default function Profile() {
         bin_number: formData.bin_number,
       };
       
-      login(updatedUser);
+      setUser(updatedUser);
       setSuccessMessage('Профиль успешно обновлен!');
       
       // Add notification

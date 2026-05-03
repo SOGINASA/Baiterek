@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useApplicationsStore } from '../../store/applicationsStore';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { Spinner } from '../ui/Spinner';
+import Button from '../../components/ui/Button';
+import Input from '../../components/ui/Input';
+import Spinner from '../../components/ui/Spinner';
 import { serviceStatusBadge } from '../../utils/helpers';
 
 export default function ApplicationDetail() {

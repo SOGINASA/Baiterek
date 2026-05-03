@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useApplicationsStore } from '../../store/applicationsStore';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { Spinner } from '../ui/Spinner';
+import Button from '../../components/ui/Button';
+import Spinner from '../../components/ui/Spinner';
 
 export default function Documents() {
   const { user } = useAuthStore();
@@ -131,9 +130,7 @@ export default function Documents() {
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt"
                     onChange={handleFileChange}
                     className="w-full text-primary/60"
-                  >
-                    Выбрать файл
-                  </input>
+                  />
                   {uploading && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                       <div className="text-center bg-white rounded-lg p-6 max-w-xs">

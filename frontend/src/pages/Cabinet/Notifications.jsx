@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useNotificationsStore } from '../../store/notificationsStore';
-import { Button } from '../ui/Button';
-import { Spinner } from '../ui/Spinner';
+import Button from '../../components/ui/Button';
+import Spinner from '../../components/ui/Spinner';
 
 export default function Notifications() {
   const { user } = useAuthStore();

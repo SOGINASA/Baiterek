@@ -3,6 +3,9 @@ import Layout        from './components/layout/Layout';
 import CabinetLayout from './components/layout/CabinetLayout';
 import AdminLayout   from './components/layout/AdminLayout';
 
+// Auth
+import Auth          from './pages/Auth';
+
 // Public pages
 import Home          from './pages/Home';
 import Catalog       from './pages/Catalog';
@@ -50,17 +53,8 @@ export const router = createBrowserRouter([
       { path: 'news/:slug',           element: <NewsArticle /> },
       { path: 'corporate',            element: <Corporate /> },
       { path: 'contacts',             element: <Contacts /> },
-      { path: 'subsidiary/:id',       element: <Subsidiary /> },
-      { path: 'cabinet',              element: <CabinetLayout />, 
-        children: [
-          { index: true, element: <Profile /> },
-          { path: 'profile', element: <Profile /> },
-          { path: 'applications', element: <Applications /> },
-          { path: 'applications/:id', element: <ApplicationDetail /> },
-          { path: 'documents', element: <Documents /> },
-          { path: 'notifications', element: <Notifications /> },
-        ]
-      },
+      { path: 'auth',            element: <Auth /> },
+      { path: 'subsidiary/:id', element: <Subsidiary /> },
     ],
   },
 

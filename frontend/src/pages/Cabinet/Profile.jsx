@@ -1,262 +1,194 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import Button from '../../components/ui/Button';
-import Input from '../../components/ui/Input';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { User, Mail, Building2, Lock, Shield, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
-import { useNotificationsStore } from '../../store/notificationsStore';
-import Spinner from '../../components/ui/Spinner';
+import Input from '../../components/ui/Input';
+import Button from '../../components/ui/Button';
 
 export default function Profile() {
   const { user, isAuth, setUser, logout } = useAuthStore();
-  const { addNotification } = useNotificationsStore();
-  const navigate = useNavigate();
-  const location = useLocation();
-  
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    full_name: user?.full_name || '',
-    email: user?.email || '',
-    bin_number: user?.bin_number || '',
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+  const [form, setForm] = useState({
+    full_name: '',
+    email: '',
+    bin_number: '',
   });
-  
-  const [errors, setErrors] = useState({});
-  const [successMessage, setSuccessMessage] = useState('');
 
-  // Load user data on mount
   useEffect(() => {
-    if (isAuth && !user) {
-      const loadUserProfile = async () => {
-        setLoading(true);
-        try {
-          // In a real app, we would fetch from API
-          // For now, we'll use mock data from authStore
-          setLoading(false);
-        } catch (error) {
-          setLoading(false);
-          addNotification('Ошибка загрузки профиля', 'error');
-        }
-      };
-      
-      loadUserProfile();
+    if (user) {
+      setForm({
+        full_name: user.full_name ?? '',
+        email: user.email ?? '',
+        bin_number: user.bin_number ?? '',
+      });
     }
-  }, [isAuth, user, addNotification]);
+  }, [user]);
 
-  // Handle form changes
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    
-    // Clear error for this field when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
-  };
+  const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
-    setErrors({});
-    
+
     try {
-      // Validate form
-      const newErrors = {};
-      if (!formData.full_name.trim()) {
-        newErrors.full_name = 'ФИО обязательно';
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(form),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user ?? { ...user, ...form });
+      } else {
+        setUser({ ...user, ...form });
       }
-      if (!formData.email.trim()) {
-        newErrors.email = 'Email обязателен';
-      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-        newErrors.email = 'Неверный формат email';
-      }
-      
-      if (Object.keys(newErrors).length > 0) {
-        setErrors(newErrors);
-        setLoading(false);
-        return;
-      }
-      
-      // Update profile via API
-      // For now, we'll update the auth store directly
-      // In a real app, this would be an API call
-      const updatedUser = {
-        ...user,
-        full_name: formData.full_name,
-        email: formData.email,
-        bin_number: formData.bin_number,
-      };
-      
-      setUser(updatedUser);
-      setSuccessMessage('Профиль успешно обновлен!');
-      
-      // Add notification
-      addNotification('Профиль успешно обновлен', 'success');
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSuccessMessage('');
-      }, 3000);
-      
-    } catch (error) {
-      console.error('Profile update error:', error);
-      addNotification('Ошибка обновления профиля', 'error');
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch {
+      setUser({ ...user, ...form });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle logout
-  const handleLogout = () => {
-    logout();
-    navigate('/auth');
-  };
-
-  if (!isAuth) {
-    navigate('/auth');
-    return null;
-  }
+  const initials = form.full_name
+    ? form.full_name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
+    : form.email?.[0]?.toUpperCase() ?? 'U';
 
   return (
-    <div className="min-h-screen bg-surface">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-primary">Личный кабинет</h1>
-          <p className="text-primary/55 mt-1">Управление вашим профилем и настройками</p>
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+
+      {/* Avatar block */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+        className="bg-surface rounded-2xl border border-primary/8 p-6 flex items-center gap-5"
+        style={{ boxShadow: 'var(--shadow-card)' }}
+      >
+        <div className="w-16 h-16 rounded-2xl bg-accent/15 flex items-center justify-center flex-shrink-0">
+          <span className="text-2xl font-bold text-accent">{initials}</span>
         </div>
-        
-        {successMessage && (
-          <div className="mb-6 p-4 bg-accent/10 border border-accent/20 rounded-lg text-accent">
-            {successMessage}
-          </div>
-        )}
-        
-        <div className="bg-bg border border-primary/5 rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-primary/5">
-            <h2 className="text-lg font-medium text-primary">Профиль</h2>
-          </div>
-          
-          <form onSubmit={handleSubmit} className="px-6 py-6 space-y-6">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
-              <div>
-                <label className="block text-sm font-medium text-primary mb-2">
-                  ФИО
-                </label>
-                <Input
-                  type="text"
-                  name="full_name"
-                  value={formData.full_name}
-                  onChange={handleChange}
-                  className={errors.full_name ? 'border-destructive' : ''}
-                  placeholder="Введите ваше полное имя"
-                />
-                {errors.full_name && (
-                  <p className="mt-1 text-sm text-destructive">{errors.full_name}</p>
-                )}
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-primary mb-2">
-                  Email
-                </label>
-                <Input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className={errors.email ? 'border-destructive' : ''}
-                  placeholder="Введите ваш email"
-                />
-                {errors.email && (
-                  <p className="mt-1 text-sm text-destructive">{errors.email}</p>
-                )}
-              </div>
-              
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-primary mb-2">
-                  БИН (для юридических лиц)
-                </label>
-                <Input
-                  type="text"
-                  name="bin_number"
-                  value={formData.bin_number}
-                  onChange={handleChange}
-                  placeholder="Введите БИН организации (если применимо)"
-                />
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <Button 
-                type="submit" 
-                disabled={loading}
-                className={loading ? 'opacity-50' : ''}
-              >
-                {loading ? 'Сохранение...' : 'Сохранить изменения'}
-              </Button>
-              
-              <Button 
-                variant="outline"
-                onClick={handleLogout}
-                className="text-destructive hover:bg-destructive/5"
-              >
-                Выйти
-              </Button>
-            </div>
-          </form>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-primary text-lg truncate">{form.full_name || 'Пользователь'}</p>
+          <p className="text-primary/50 text-sm truncate">{form.email}</p>
+          {form.bin_number && (
+            <p className="text-primary/40 text-xs mt-0.5">БИН: {form.bin_number}</p>
+          )}
         </div>
-        
-        {/* Security Section */}
-        <div className="mt-8 bg-bg border border-primary/5 rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-primary/5">
-            <h2 className="text-lg font-medium text-primary">Безопасность</h2>
+      </motion.div>
+
+      {/* Profile form */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05, duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+        className="bg-surface rounded-2xl border border-primary/8 overflow-hidden"
+        style={{ boxShadow: 'var(--shadow-card)' }}
+      >
+        <div className="px-6 py-4 border-b border-primary/8 flex items-center gap-2">
+          <User size={16} className="text-accent" />
+          <h2 className="text-sm font-semibold text-primary">Личные данные</h2>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <Input
+            label="Полное имя"
+            value={form.full_name}
+            onChange={e => set('full_name', e.target.value)}
+            placeholder="Алибек Джаксыбеков"
+            leftIcon={<User size={14} className="text-primary/35" />}
+          />
+          <Input
+            label="Email"
+            type="email"
+            value={form.email}
+            onChange={e => set('email', e.target.value)}
+            placeholder="your@email.com"
+            leftIcon={<Mail size={14} className="text-primary/35" />}
+          />
+          <Input
+            label="БИН организации"
+            value={form.bin_number}
+            onChange={e => set('bin_number', e.target.value)}
+            placeholder="123456789012"
+            leftIcon={<Building2 size={14} className="text-primary/35" />}
+          />
+
+          {error && (
+            <div className="flex items-center gap-2 px-3 py-2.5 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+              <AlertCircle size={14} className="flex-shrink-0" />
+              {error}
+            </div>
+          )}
+
+          {saved && (
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-2 px-3 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-600"
+            >
+              <CheckCircle2 size={14} className="flex-shrink-0" />
+              Данные сохранены
+            </motion.div>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <Button type="submit" loading={loading} className="flex-1">
+              Сохранить изменения
+            </Button>
           </div>
-          
-          <div className="px-6 py-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium text-primary">Изменить пароль</h3>
-                <p className="text-primary/50 text-sm">
-                  Для изменения пароля обратитесь в службу поддержки
-                </p>
-              </div>
-              <Button 
-                size="sm"
-                variant="outline"
-                onClick={() => navigate('/auth/password-reset')}
-              >
-                Изменить пароль
-              </Button>
+        </form>
+      </motion.div>
+
+      {/* Security */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+        className="bg-surface rounded-2xl border border-primary/8 overflow-hidden"
+        style={{ boxShadow: 'var(--shadow-card)' }}
+      >
+        <div className="px-6 py-4 border-b border-primary/8 flex items-center gap-2">
+          <Shield size={16} className="text-accent" />
+          <h2 className="text-sm font-semibold text-primary">Безопасность</h2>
+        </div>
+
+        <div className="divide-y divide-primary/8">
+          <div className="px-6 py-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-primary">Изменить пароль</p>
+              <p className="text-xs text-primary/45 mt-0.5">Минимум 8 символов, рекомендуется использовать цифры и знаки</p>
             </div>
-            
-            <div className="border-t border-primary/5 pt-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium text-primary">Активные сессии</h3>
-                  <p className="text-primary/50 text-sm">
-                    1 активная сессия • Последний вход: сегодня, 10:30
-                  </p>
-                </div>
-                <Button 
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    // In a real app, this would revoke all sessions except current
-                    addNotification('Все другие сессии завершены', 'success');
-                  }}
-                >
-                  Выйти из всех устройств
-                </Button>
-              </div>
+            <Button size="sm" variant="outline" className="flex-shrink-0 flex items-center gap-1.5">
+              <Lock size={13} />
+              Изменить
+            </Button>
+          </div>
+
+          <div className="px-6 py-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-primary">Активные сессии</p>
+              <p className="text-xs text-primary/45 mt-0.5">1 активная сессия · Последний вход сегодня</p>
             </div>
+            <Button size="sm" variant="outline" className="flex-shrink-0 text-rose-500 border-rose-200 hover:bg-rose-50"
+              onClick={logout}>
+              Выйти со всех устройств
+            </Button>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

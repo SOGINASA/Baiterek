@@ -1,7 +1,10 @@
-import { useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Bell, LogOut } from 'lucide-react';
 import { ROUTES } from '../../constants/routes';
+import { useAuthStore } from '../../store/authStore';
+import { useNotificationsStore } from '../../store/notificationsStore';
 
 const NAV_LINKS = [
   { href: ROUTES.CATALOG,        label: 'Каталог услуг' },
@@ -13,6 +16,22 @@ const NAV_LINKS = [
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { isAuth, user, logout, initializeAuth } = useAuthStore();
+  const { unreadCount, fetchUnreadCount } = useNotificationsStore();
+  const navigate = useNavigate();
+
+  useEffect(() => { initializeAuth(); }, [initializeAuth]);
+  useEffect(() => { if (isAuth) fetchUnreadCount(); }, [isAuth, fetchUnreadCount]);
+
+  const initials = user?.full_name
+    ? user.full_name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
+    : user?.email?.[0]?.toUpperCase() ?? 'U';
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+    setMenuOpen(false);
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-primary/95 backdrop-blur-sm border-b border-white/10">
@@ -47,13 +66,51 @@ export default function Header() {
 
         {/* Right actions */}
         <div className="flex items-center gap-2">
-          <Link
-            to={ROUTES.CABINET}
-            className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-primary text-sm font-medium
-              hover:bg-accent-light transition-colors duration-150"
-          >
-            Личный кабинет
-          </Link>
+          {isAuth ? (
+            <>
+              {/* Notification bell */}
+              <Link
+                to={ROUTES.CABINET + '/notifications'}
+                className="relative p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/8 transition-colors duration-150 hidden md:flex"
+              >
+                <Bell size={18} />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-400 rounded-full" />
+                )}
+              </Link>
+
+              {/* User avatar */}
+              <Link
+                to={ROUTES.CABINET}
+                className="hidden md:flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15
+                  text-white text-sm font-medium transition-colors duration-150"
+              >
+                <span className="w-6 h-6 rounded-full bg-accent flex items-center justify-center text-primary text-xs font-bold flex-shrink-0">
+                  {initials}
+                </span>
+                <span className="hidden lg:block max-w-[120px] truncate">
+                  {user?.full_name ?? user?.email ?? 'Кабинет'}
+                </span>
+              </Link>
+
+              {/* Logout */}
+              <button
+                onClick={handleLogout}
+                className="hidden md:flex p-2 rounded-lg text-white/50 hover:text-red-300 hover:bg-white/8 transition-colors duration-150"
+                title="Выйти"
+              >
+                <LogOut size={16} />
+              </button>
+            </>
+          ) : (
+            <Link
+              to="/auth"
+              className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-primary text-sm font-medium
+                hover:bg-accent-light transition-colors duration-150"
+            >
+              Войти
+            </Link>
+          )}
 
           {/* Mobile hamburger */}
           <button
@@ -96,13 +153,39 @@ export default function Header() {
                   {link.label}
                 </NavLink>
               ))}
-              <Link
-                to={ROUTES.CABINET}
-                onClick={() => setMenuOpen(false)}
-                className="mt-2 px-4 py-3 rounded-xl bg-accent text-primary text-sm font-medium text-center transition-colors duration-150 hover:bg-accent-light"
-              >
-                Личный кабинет
-              </Link>
+              {isAuth ? (
+                <>
+                  <Link
+                    to={ROUTES.CABINET}
+                    onClick={() => setMenuOpen(false)}
+                    className="mt-2 px-4 py-3 rounded-xl bg-white/10 text-white text-sm font-medium text-center transition-colors duration-150 hover:bg-white/15 flex items-center justify-center gap-2"
+                  >
+                    <span className="w-5 h-5 rounded-full bg-accent flex items-center justify-center text-primary text-[10px] font-bold">
+                      {initials}
+                    </span>
+                    Личный кабинет
+                    {unreadCount > 0 && (
+                      <span className="w-5 h-5 rounded-full bg-red-400 text-white text-[10px] font-bold flex items-center justify-center">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="mt-1 px-4 py-3 rounded-xl text-red-300/80 hover:text-red-300 hover:bg-white/5 text-sm font-medium text-center transition-colors duration-150"
+                  >
+                    Выйти
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/auth"
+                  onClick={() => setMenuOpen(false)}
+                  className="mt-2 px-4 py-3 rounded-xl bg-accent text-primary text-sm font-medium text-center transition-colors duration-150 hover:bg-accent-light"
+                >
+                  Войти
+                </Link>
+              )}
             </nav>
           </motion.div>
         )}

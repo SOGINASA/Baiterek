@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Phone, Mail, MapPin } from 'lucide-react';
 import { ROUTES } from '../../constants/routes';
 import { SUBSIDIARIES } from '../../constants/categories';
 
@@ -57,9 +58,9 @@ export default function Footer() {
           <div>
             <h4 className="text-white text-sm font-semibold mb-4">Контакты</h4>
             <ul className="space-y-2.5 text-sm">
-              <li>📍 г. Астана, ул. Достык, 1</li>
-              <li><a href="tel:+77172555000" className="hover:text-accent transition-colors duration-150">📞 +7 (7172) 55-50-00</a></li>
-              <li><a href="mailto:info@baiterek.kz" className="hover:text-accent transition-colors duration-150">✉️ info@baiterek.kz</a></li>
+              <li className="flex items-start gap-2"><MapPin size={14} className="flex-shrink-0 mt-0.5 text-accent" />г. Астана, ул. Достык, 1</li>
+              <li><a href="tel:+77172555000" className="flex items-center gap-2 hover:text-accent transition-colors duration-150"><Phone size={14} className="text-accent" />+7 (7172) 55-50-00</a></li>
+              <li><a href="mailto:info@baiterek.kz" className="flex items-center gap-2 hover:text-accent transition-colors duration-150"><Mail size={14} className="text-accent" />info@baiterek.kz</a></li>
             </ul>
           </div>
         </div>

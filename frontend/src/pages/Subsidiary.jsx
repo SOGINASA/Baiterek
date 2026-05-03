@@ -1,25 +1,38 @@
-import { useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Building2, ClipboardList } from 'lucide-react';
 import { SUBSIDIARIES } from '../constants/categories';
+import { subsidiariesAPI } from '../api/subsidiaries';
 import { MOCK_SERVICES } from '../constants/mockData';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import Badge from '../components/ui/Badge';
 import ServiceCard from '../components/shared/ServiceCard';
+import { SkeletonCard } from '../components/ui/Skeleton';
 
 export default function Subsidiary() {
   const { id } = useParams();
-  const org = useMemo(() => SUBSIDIARIES.find(s => s.id === id), [id]);
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const services = useMemo(
-    () => org ? MOCK_SERVICES.filter(s => s.subsidiaryId === org.id) : [],
-    [org]
-  );
+  const org = SUBSIDIARIES.find(s => s.id === id);
+
+  useEffect(() => {
+    if (!org) { setLoading(false); return; }
+    setLoading(true);
+    subsidiariesAPI.getServices(id)
+      .then(data => setServices(Array.isArray(data) ? data : []))
+      .catch(() => {
+        const fallback = MOCK_SERVICES.filter(s => s.subsidiaryId === id);
+        setServices(fallback);
+      })
+      .finally(() => setLoading(false));
+  }, [id, org]);
 
   if (!org) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-        <p className="text-5xl mb-4">🏢</p>
+        <Building2 size={48} className="text-primary/20 mx-auto mb-4" />
         <h1 className="text-xl font-semibold text-primary mb-2">Организация не найдена</h1>
         <Link to="/" className="text-accent hover:underline text-sm">На главную</Link>
       </div>
@@ -47,7 +60,7 @@ export default function Subsidiary() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
             <div>
               <p className="text-primary/45 text-xs mb-1">Телефон</p>
-              <a href={`tel:+77172555001`} className="text-accent hover:text-accent-light transition-colors duration-150">
+              <a href="tel:+77172555001" className="text-accent hover:text-accent-light transition-colors duration-150">
                 +7 (7172) 55-50-01
               </a>
             </div>
@@ -64,7 +77,11 @@ export default function Subsidiary() {
           </div>
         </div>
 
-        {services.length > 0 && (
+        {loading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+        ) : services.length > 0 ? (
           <div>
             <h2 className="text-xl font-bold text-primary mb-5">
               Услуги <Badge variant="muted">{services.length}</Badge>
@@ -82,11 +99,9 @@ export default function Subsidiary() {
               ))}
             </div>
           </div>
-        )}
-
-        {services.length === 0 && (
+        ) : (
           <div className="text-center py-16">
-            <p className="text-3xl mb-3">📋</p>
+            <ClipboardList size={40} className="text-primary/20 mx-auto mb-3" />
             <p className="text-primary/60">Услуги не найдены</p>
           </div>
         )}

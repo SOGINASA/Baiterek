@@ -2,22 +2,25 @@ import { useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useServicesStore } from '../store/servicesStore';
+import { useNewsStore } from '../store/newsStore';
 import { SUBSIDIARIES } from '../constants/categories';
-import { MOCK_NEWS } from '../constants/mockData';
 import { ROUTES } from '../constants/routes';
 import SearchBar from '../components/shared/SearchBar';
 import ServiceCard from '../components/shared/ServiceCard';
 import NewsCard from '../components/shared/NewsCard';
 import Button from '../components/ui/Button';
+import { SkeletonCard } from '../components/ui/Skeleton';
 
 export default function Home() {
-  const { services, fetchServices } = useServicesStore();
+  const { services, loading: servicesLoading, fetchServices } = useServicesStore();
+  const { news, loading: newsLoading, fetchNews } = useNewsStore();
   const navigate = useNavigate();
 
   useEffect(() => { fetchServices(); }, [fetchServices]);
+  useEffect(() => { fetchNews(); }, [fetchNews]);
 
-  const popularServices = useMemo(() => services.filter(s => s.popular).slice(0, 6), [services]);
-  const latestNews = MOCK_NEWS.slice(0, 3);
+  const popularServices = useMemo(() => services.filter(s => s.is_popular || s.popular).slice(0, 6), [services]);
+  const latestNews = useMemo(() => news.slice(0, 3), [news]);
 
   return (
     <div>
@@ -33,7 +36,7 @@ export default function Home() {
             transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
           >
             <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/15 text-accent text-xs font-medium mb-6">
-              🇰🇿 Единый портал господдержки бизнеса
+              Единый портал господдержки бизнеса · Казахстан
             </span>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-4 max-w-3xl">
               Поддержка вашего бизнеса в{' '}
@@ -99,17 +102,20 @@ export default function Home() {
           </Link>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {popularServices.map((service, i) => (
-            <motion.div
-              key={service.id}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-40px' }}
-              transition={{ delay: i * 0.06, duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
-            >
-              <ServiceCard service={service} />
-            </motion.div>
-          ))}
+          {servicesLoading
+            ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+            : popularServices.map((service, i) => (
+                <motion.div
+                  key={service.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-40px' }}
+                  transition={{ delay: i * 0.06, duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                >
+                  <ServiceCard service={service} />
+                </motion.div>
+              ))
+          }
         </div>
       </section>
 
@@ -148,17 +154,20 @@ export default function Home() {
           </Link>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {latestNews.map((article, i) => (
-            <motion.div
-              key={article.id}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-40px' }}
-              transition={{ delay: i * 0.07, duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
-            >
-              <NewsCard article={article} />
-            </motion.div>
-          ))}
+          {newsLoading
+            ? Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)
+            : latestNews.map((article, i) => (
+                <motion.div
+                  key={article.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-40px' }}
+                  transition={{ delay: i * 0.07, duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                >
+                  <NewsCard article={article} />
+                </motion.div>
+              ))
+          }
         </div>
       </section>
 

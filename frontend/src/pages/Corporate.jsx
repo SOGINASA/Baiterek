@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Building2, User, FileText } from 'lucide-react';
 import { MOCK_LEADERSHIP, KEY_NUMBERS, MOCK_DOCUMENTS } from '../constants/mockData';
 import { ROUTES } from '../constants/routes';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
@@ -66,7 +67,7 @@ export default function Corporate() {
             </div>
           </div>
           <div className="rounded-2xl bg-gradient-to-br from-secondary/10 to-accent/5 border border-primary/8 h-56 flex items-center justify-center">
-            <span className="text-6xl opacity-30">🏛️</span>
+            <Building2 size={72} className="text-primary/15" />
           </div>
         </div>
       </section>
@@ -87,7 +88,7 @@ export default function Corporate() {
                 style={{ boxShadow: 'var(--shadow-card)' }}
               >
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-secondary/20 to-accent/10 border-2 border-accent/20 flex items-center justify-center mx-auto mb-3">
-                  <span className="text-2xl">👤</span>
+                  <User size={28} className="text-primary/30" />
                 </div>
                 <p className="font-semibold text-primary text-sm leading-snug">{person.name}</p>
                 <p className="text-primary/50 text-xs mt-1 leading-snug">{person.position}</p>
@@ -103,7 +104,7 @@ export default function Corporate() {
         <div className="bg-surface rounded-2xl border border-primary/8 divide-y divide-primary/8" style={{ boxShadow: 'var(--shadow-card)' }}>
           {MOCK_DOCUMENTS.map(doc => (
             <div key={doc.id} className="flex items-center gap-4 px-6 py-4 hover:bg-primary/3 transition-colors duration-150">
-              <span className="text-2xl flex-shrink-0">📄</span>
+              <FileText size={20} className="text-primary/35 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-primary text-sm">{doc.title}</p>
                 <p className="text-primary/45 text-xs mt-0.5">{doc.date}</p>

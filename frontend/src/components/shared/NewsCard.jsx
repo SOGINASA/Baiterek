@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Newspaper } from 'lucide-react';
 import Badge from '../ui/Badge';
 import { formatDateShort } from '../../utils/formatters';
 import { route, ROUTES } from '../../constants/routes';
@@ -75,7 +76,7 @@ export default function NewsCard({ article, featured = false, orientation = 'ver
         style={{ boxShadow: 'var(--shadow-card)' }}
       >
         <div className="h-44 bg-gradient-to-br from-secondary/20 to-secondary/5 flex items-center justify-center">
-          <span className="text-4xl opacity-20">📰</span>
+          <Newspaper size={48} className="text-primary/15" />
         </div>
         <div className="p-5 flex flex-col gap-3 flex-1">
           <div className="flex items-center gap-2">

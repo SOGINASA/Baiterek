@@ -1,16 +1,18 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { MOCK_NEWS } from '../constants/mockData';
+import { Newspaper } from 'lucide-react';
+import { useNewsStore } from '../store/newsStore';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import Tabs from '../components/ui/Tabs';
 import Pagination from '../components/ui/Pagination';
 import NewsCard from '../components/shared/NewsCard';
+import { SkeletonCard } from '../components/ui/Skeleton';
 
 const NEWS_TABS = [
-  { id: 'all',          label: 'Все' },
-  { id: 'press_release',label: 'Пресс-релизы' },
-  { id: 'announcement', label: 'Анонсы' },
-  { id: 'event',        label: 'Мероприятия' },
+  { id: 'all',           label: 'Все' },
+  { id: 'press_release', label: 'Пресс-релизы' },
+  { id: 'announcement',  label: 'Анонсы' },
+  { id: 'event',         label: 'Мероприятия' },
 ];
 
 const PER_PAGE = 6;
@@ -18,14 +20,13 @@ const PER_PAGE = 6;
 export default function News() {
   const [activeTab, setActiveTab] = useState('all');
   const [page, setPage] = useState(1);
+  const { news, featured, loading, fetchNews } = useNewsStore();
 
-  const featured = MOCK_NEWS.find(n => n.featured);
+  useEffect(() => {
+    fetchNews({ type: activeTab === 'all' ? undefined : activeTab });
+  }, [activeTab, fetchNews]);
 
-  const filtered = useMemo(() => {
-    const list = MOCK_NEWS.filter(n => !n.featured);
-    return activeTab === 'all' ? list : list.filter(n => n.category === activeTab);
-  }, [activeTab]);
-
+  const filtered = useMemo(() => news.filter(n => n !== featured), [news, featured]);
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
@@ -58,9 +59,13 @@ export default function News() {
         className="mb-8"
       />
 
-      {paged.length === 0 ? (
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      ) : paged.length === 0 ? (
         <div className="text-center py-16">
-          <p className="text-3xl mb-3">📰</p>
+          <Newspaper size={48} className="text-primary/20 mx-auto mb-3" />
           <p className="text-primary/60">Новости не найдены</p>
         </div>
       ) : (

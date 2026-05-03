@@ -1,12 +1,12 @@
 export const CATEGORIES = [
-  { id: 'financing',      slug: 'financing',      label: 'Финансирование',         icon: '💰', description: 'Кредиты, займы и субсидированное финансирование для бизнеса' },
-  { id: 'guarantees',     slug: 'guarantees',     label: 'Гарантии',               icon: '🛡️', description: 'Государственные гарантии по банковским кредитам' },
-  { id: 'export',         slug: 'export',         label: 'Поддержка экспорта',     icon: '🌍', description: 'Страхование экспортных сделок, гарантии для экспортёров' },
-  { id: 'leasing',        slug: 'leasing',        label: 'Лизинг',                 icon: '🏭', description: 'Финансовый и операционный лизинг оборудования' },
-  { id: 'venture',        slug: 'venture',        label: 'Венчурное финансирование',icon: '🚀', description: 'Инвестиции в стартапы и инновационные компании' },
-  { id: 'consulting',     slug: 'consulting',     label: 'Консультации',           icon: '💬', description: 'Бесплатные консультации по мерам господдержки' },
-  { id: 'grants',         slug: 'grants',         label: 'Гранты',                 icon: '🎁', description: 'Безвозвратные субсидии для МСБ' },
-  { id: 'infrastructure', slug: 'infrastructure', label: 'Инфраструктура',         icon: '🔧', description: 'Индустриальные зоны, технопарки, СЭЗ' },
+  { id: 'financing',      slug: 'financing',      label: 'Финансирование',          icon: 'DollarSign',    color: '#0068B4', description: 'Кредиты, займы и субсидированное финансирование для бизнеса' },
+  { id: 'guarantees',     slug: 'guarantees',     label: 'Гарантии',                icon: 'Shield',        color: '#E3001B', description: 'Государственные гарантии по банковским кредитам' },
+  { id: 'export',         slug: 'export',         label: 'Поддержка экспорта',      icon: 'Globe',         color: '#00539B', description: 'Страхование экспортных сделок, гарантии для экспортёров' },
+  { id: 'leasing',        slug: 'leasing',        label: 'Лизинг',                  icon: 'Briefcase',     color: '#0057A8', description: 'Финансовый и операционный лизинг оборудования' },
+  { id: 'venture',        slug: 'venture',        label: 'Венчурное финансирование', icon: 'TrendingUp',    color: '#005AA7', description: 'Инвестиции в стартапы и инновационные компании' },
+  { id: 'consulting',     slug: 'consulting',     label: 'Консультации',            icon: 'Users',         color: '#C9A84C', description: 'Бесплатные консультации по мерам господдержки' },
+  { id: 'grants',         slug: 'grants',         label: 'Гранты',                  icon: 'Gift',          color: '#1B3A6B', description: 'Безвозвратные субсидии для МСБ' },
+  { id: 'infrastructure', slug: 'infrastructure', label: 'Инфраструктура',           icon: 'Building',      color: '#0A1628', description: 'Индустриальные зоны, технопарки, СЭЗ' },
 ];
 
 export const SUBSIDIARIES = [

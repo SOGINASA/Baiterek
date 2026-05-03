@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { Search } from 'lucide-react';
 import { useServicesStore } from '../store/servicesStore';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import Pagination from '../components/ui/Pagination';
@@ -88,7 +89,7 @@ export default function Catalog() {
             <div className="flex justify-center py-20"><Spinner size="lg" /></div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-20">
-              <p className="text-4xl mb-4">🔍</p>
+              <Search size={44} className="text-primary/20 mx-auto mb-4" />
               <p className="text-primary/60 font-medium">Ничего не найдено</p>
               <p className="text-primary/40 text-sm mt-1">Попробуйте изменить параметры поиска</p>
               <Button variant="ghost" size="sm" className="mt-4" onClick={() => { resetFilters(); setPage(1); }}>

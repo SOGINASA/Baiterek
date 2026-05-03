@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -6,6 +7,7 @@ import {
 } from 'lucide-react';
 import Header from './Header';
 import Footer from './Footer';
+import { useAuthStore } from '../../store/authStore';
 
 const NAV = [
   { to: '/cabinet',               label: 'Обзор',        icon: LayoutDashboard, end: true },
@@ -26,6 +28,11 @@ const pageVariants = {
 export default function CabinetLayout() {
   const navigate     = useNavigate();
   const { pathname } = useLocation();
+  const { isAuth }   = useAuthStore();
+
+  useEffect(() => {
+    if (!isAuth) navigate('/auth', { replace: true });
+  }, [isAuth, navigate]);
 
   return (
     <div className="min-h-screen flex flex-col bg-bg">

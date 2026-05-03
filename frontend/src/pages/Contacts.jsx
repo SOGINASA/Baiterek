@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Phone, Mail, Globe, MapPin, CheckCircle2 } from 'lucide-react';
 import { SUBSIDIARIES } from '../constants/categories';
 import { validateEmail, validateRequired } from '../utils/validators';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
@@ -52,8 +53,18 @@ export default function Contacts() {
           <h2 className="font-semibold text-primary mb-4">АО «НИХ «Байтерек»</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div><p className="text-primary/45 text-xs mb-1">Адрес</p><p className="text-primary/80">{MAIN_CONTACTS.address}</p></div>
-            <div><p className="text-primary/45 text-xs mb-1">Телефон</p><a href={`tel:${MAIN_CONTACTS.phone}`} className="text-accent hover:text-accent-light transition-colors duration-150">{MAIN_CONTACTS.phone}</a></div>
-            <div><p className="text-primary/45 text-xs mb-1">Email</p><a href={`mailto:${MAIN_CONTACTS.email}`} className="text-accent hover:text-accent-light transition-colors duration-150">{MAIN_CONTACTS.email}</a></div>
+            <div>
+              <p className="text-primary/45 text-xs mb-1">Телефон</p>
+              <a href={`tel:${MAIN_CONTACTS.phone}`} className="text-accent hover:text-accent-light transition-colors duration-150 flex items-center gap-1.5">
+                <Phone size={13} />{MAIN_CONTACTS.phone}
+              </a>
+            </div>
+            <div>
+              <p className="text-primary/45 text-xs mb-1">Email</p>
+              <a href={`mailto:${MAIN_CONTACTS.email}`} className="text-accent hover:text-accent-light transition-colors duration-150 flex items-center gap-1.5">
+                <Mail size={13} />{MAIN_CONTACTS.email}
+              </a>
+            </div>
             <div><p className="text-primary/45 text-xs mb-1">Режим работы</p><p className="text-primary/80">{MAIN_CONTACTS.hours}</p></div>
           </div>
         </div>
@@ -76,9 +87,18 @@ export default function Contacts() {
                 <h3 className="font-semibold text-primary text-sm">{org.nameFull}</h3>
               </div>
               <div className="space-y-2 text-xs text-primary/60">
-                <p>📞 +7 (7172) 55-50-0{i + 1}</p>
-                <p>✉️ info@{org.id}.kz</p>
-                <p>🌐 {org.id}.kz</p>
+                <p className="flex items-center gap-2">
+                  <Phone size={12} className="text-primary/35 flex-shrink-0" />
+                  +7 (7172) 55-50-0{i + 1}
+                </p>
+                <p className="flex items-center gap-2">
+                  <Mail size={12} className="text-primary/35 flex-shrink-0" />
+                  info@{org.id}.kz
+                </p>
+                <p className="flex items-center gap-2">
+                  <Globe size={12} className="text-primary/35 flex-shrink-0" />
+                  {org.id}.kz
+                </p>
               </div>
             </motion.div>
           ))}
@@ -86,7 +106,10 @@ export default function Contacts() {
 
         {/* Map placeholder */}
         <div className="w-full h-52 bg-primary/4 rounded-2xl border border-primary/10 flex items-center justify-center mb-14">
-          <span className="text-primary/30 text-sm">🗺️ Карта офисов</span>
+          <div className="flex items-center gap-2 text-primary/30 text-sm">
+            <MapPin size={18} />
+            <span>Карта офисов</span>
+          </div>
         </div>
 
         {/* Feedback form */}
@@ -100,7 +123,7 @@ export default function Contacts() {
               className="bg-surface rounded-2xl border border-primary/8 p-8 text-center"
               style={{ boxShadow: 'var(--shadow-card)' }}
             >
-              <p className="text-4xl mb-4">✅</p>
+              <CheckCircle2 size={48} className="text-emerald-500 mx-auto mb-4" />
               <h3 className="font-semibold text-primary text-lg mb-2">Сообщение отправлено!</h3>
               <p className="text-primary/60 text-sm">Мы ответим на ваш запрос в течение 1–2 рабочих дней.</p>
             </motion.div>

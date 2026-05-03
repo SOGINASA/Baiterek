@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Search, FileText, Check, Clock } from 'lucide-react';
 import { useServicesStore } from '../store/servicesStore';
 import { CATEGORIES, SUBSIDIARIES } from '../constants/categories';
 import { MOCK_SERVICES } from '../constants/mockData';
@@ -9,7 +10,9 @@ import { ROUTES } from '../constants/routes';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
+import Icon from '../components/ui/Icon';
 import ServiceCard from '../components/shared/ServiceCard';
+import ApplicationModal from '../components/shared/ApplicationModal';
 
 function AccordionItem({ id, title, children, openId, setOpenId }) {
   const isOpen = openId === id;
@@ -51,6 +54,7 @@ export default function Service() {
   const { slug } = useParams();
   const { services, fetchServices } = useServicesStore();
   const [openId, setOpenId] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => { fetchServices(); }, [fetchServices]);
 
@@ -60,22 +64,23 @@ export default function Service() {
   );
 
   const related = useMemo(
-    () => service ? MOCK_SERVICES.filter(s => s.category === service.category && s.slug !== slug).slice(0, 4) : [],
-    [service, slug]
+    () => service ? (services.length ? services : MOCK_SERVICES)
+      .filter(s => s.category === service.category && s.slug !== slug).slice(0, 4) : [],
+    [service, services, slug]
   );
 
   if (!service) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-        <p className="text-5xl mb-4">🔍</p>
+        <Search size={48} className="text-primary/20 mx-auto mb-4" />
         <h1 className="text-xl font-semibold text-primary mb-2">Услуга не найдена</h1>
         <Link to={ROUTES.CATALOG} className="text-accent hover:underline text-sm">Вернуться в каталог</Link>
       </div>
     );
   }
 
-  const category   = CATEGORIES.find(c => c.id === service.category);
-  const subsidiary = SUBSIDIARIES.find(s => s.id === service.subsidiaryId);
+  const category   = CATEGORIES.find(c => c.id === (service.category?.id || service.category));
+  const subsidiary = SUBSIDIARIES.find(s => s.id === (service.subsidiaryId || service.subsidiary?.id));
 
   return (
     <div>
@@ -84,10 +89,17 @@ export default function Service() {
           <Breadcrumbs items={[{ label: 'Главная', href: '/' }, { label: 'Каталог', href: ROUTES.CATALOG }, { label: service.title }]} />
           <div className="mt-4">
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="text-2xl">{category?.icon}</span>
+              {category && (
+                <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: `${category.color}25` }}>
+                  <Icon name={category.icon} size={16} style={{ color: category.color }} />
+                </span>
+              )}
               {subsidiary && <Badge variant="accent">{subsidiary.name}</Badge>}
               {service.tags?.slice(0, 3).map(tag => (
-                <Badge key={tag} variant="muted" className="bg-white/10 text-white/60">{tag}</Badge>
+                <Badge key={typeof tag === 'string' ? tag : tag.name} variant="muted" className="bg-white/10 text-white/60">
+                  {typeof tag === 'string' ? tag : tag.name}
+                </Badge>
               ))}
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-white leading-snug">{service.title}</h1>
@@ -106,7 +118,10 @@ export default function Service() {
                 <AccordionItem id="conditions" title="Условия получения" openId={openId} setOpenId={setOpenId}>
                   <ul className="space-y-2">
                     {service.conditions.map((c, i) => (
-                      <li key={i} className="flex items-start gap-2"><span className="text-accent mt-0.5 flex-shrink-0">✓</span>{c}</li>
+                      <li key={i} className="flex items-start gap-2">
+                        <Check size={14} className="text-accent mt-0.5 flex-shrink-0" />
+                        {c}
+                      </li>
                     ))}
                   </ul>
                 </AccordionItem>
@@ -115,7 +130,10 @@ export default function Service() {
                 <AccordionItem id="documents" title="Необходимые документы" openId={openId} setOpenId={setOpenId}>
                   <ul className="space-y-2">
                     {service.documents.map((d, i) => (
-                      <li key={i} className="flex items-start gap-2"><span className="text-primary/40 flex-shrink-0">📄</span>{d}</li>
+                      <li key={i} className="flex items-start gap-2">
+                        <FileText size={14} className="text-primary/40 mt-0.5 flex-shrink-0" />
+                        {d}
+                      </li>
                     ))}
                   </ul>
                 </AccordionItem>
@@ -148,10 +166,13 @@ export default function Service() {
               )}
               {service.term?.label && (
                 <div className="flex items-center gap-2 mb-5 text-sm text-primary/60">
-                  <span>⏱</span>{service.term.label}
+                  <Clock size={14} className="text-primary/35" />
+                  {service.term.label}
                 </div>
               )}
-              <Button className="w-full" size="lg">Подать заявку</Button>
+              <Button className="w-full" size="lg" onClick={() => setModalOpen(true)}>
+                Подать заявку
+              </Button>
               <Button variant="outline" className="w-full mt-2" size="md">Узнать подробнее</Button>
               {subsidiary && (
                 <p className="text-center text-xs text-primary/40 mt-4">{subsidiary.nameFull}</p>
@@ -161,9 +182,18 @@ export default function Service() {
         </div>
       </div>
 
+      {/* Mobile sticky CTA */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-surface/95 backdrop-blur border-t border-primary/10 p-4 z-30">
-        <Button className="w-full" size="lg">Подать заявку</Button>
+        <Button className="w-full" size="lg" onClick={() => setModalOpen(true)}>
+          Подать заявку
+        </Button>
       </div>
+
+      <ApplicationModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        service={service}
+      />
     </div>
   );
 }

@@ -1,13 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { MOCK_ARTICLES, MOCK_FAQ } from '../constants/mockData';
+import { BookOpen } from 'lucide-react';
+import { useArticlesStore } from '../store/articlesStore';
+import { MOCK_FAQ } from '../constants/mockData';
 import { CATEGORIES } from '../constants/categories';
 import { formatDateShort } from '../utils/formatters';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import Tabs from '../components/ui/Tabs';
 import Badge from '../components/ui/Badge';
 import SearchBar from '../components/shared/SearchBar';
+import Icon from '../components/ui/Icon';
+import { SkeletonCard } from '../components/ui/Skeleton';
 
 const ALL_TABS = [
   { id: 'all', label: 'Все' },
@@ -53,14 +57,16 @@ function FAQItem({ item }) {
 export default function KnowledgeBase() {
   const [activeTab, setActiveTab] = useState('all');
   const [query, setQuery] = useState('');
+  const { articles, loading, fetchArticles } = useArticlesStore();
+
+  useEffect(() => {
+    fetchArticles({ category: activeTab === 'all' ? undefined : activeTab, q: query });
+  }, [activeTab, fetchArticles]);
 
   const filtered = useMemo(() => {
-    return MOCK_ARTICLES.filter(a => {
-      const matchCat = activeTab === 'all' || a.category === activeTab;
-      const matchQ   = !query || a.title.toLowerCase().includes(query.toLowerCase());
-      return matchCat && matchQ;
-    });
-  }, [activeTab, query]);
+    if (!query) return articles;
+    return articles.filter(a => a.title.toLowerCase().includes(query.toLowerCase()));
+  }, [articles, query]);
 
   return (
     <div>
@@ -87,15 +93,19 @@ export default function KnowledgeBase() {
           className="mb-8"
         />
 
-        {filtered.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-3xl mb-3">📚</p>
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-14">
+            {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-16 mb-14">
+            <BookOpen size={48} className="text-primary/20 mx-auto mb-3" />
             <p className="text-primary/60">Статьи не найдены</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-14">
             {filtered.map((article, i) => {
-              const cat = CATEGORIES.find(c => c.id === article.category);
+              const cat = CATEGORIES.find(c => c.id === (article.category?.id || article.category));
               return (
                 <motion.div
                   key={article.id}
@@ -111,16 +121,27 @@ export default function KnowledgeBase() {
                       style={{ boxShadow: 'var(--shadow-card)' }}
                     >
                       <div className="flex items-center gap-2 mb-3">
-                        <span className="text-xl">{cat?.icon}</span>
-                        <Badge variant="muted">{cat?.label}</Badge>
-                        <span className="ml-auto text-xs text-primary/40">{article.readMinutes} мин</span>
+                        {cat && (
+                          <span className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                            style={{ backgroundColor: `${cat.color}18` }}>
+                            <Icon name={cat.icon} size={14} style={{ color: cat.color }} />
+                          </span>
+                        )}
+                        <Badge variant="muted">{cat?.label ?? article.category}</Badge>
+                        <span className="ml-auto text-xs text-primary/40">{article.reading_time ?? article.readMinutes} мин</span>
                       </div>
                       <h3 className="font-semibold text-primary text-sm leading-snug line-clamp-2 group-hover:text-secondary transition-colors duration-150">
                         {article.title}
                       </h3>
                       <div className="flex items-center gap-2 mt-3">
-                        {article.tags?.slice(0, 2).map(tag => <Badge key={tag} variant="muted">{tag}</Badge>)}
-                        <span className="ml-auto text-xs text-primary/40">{formatDateShort(article.publishedAt)}</span>
+                        {article.tags?.slice(0, 2).map(tag => (
+                          <Badge key={typeof tag === 'string' ? tag : tag.name} variant="muted">
+                            {typeof tag === 'string' ? tag : tag.name}
+                          </Badge>
+                        ))}
+                        <span className="ml-auto text-xs text-primary/40">
+                          {formatDateShort(article.published_at ?? article.publishedAt)}
+                        </span>
                       </div>
                     </motion.div>
                   </Link>

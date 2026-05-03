@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -6,21 +6,9 @@ import {
   Bell, User, Building2, Download, TrendingUp, AlertCircle,
   PlusCircle, ArrowUpRight, CalendarDays, Inbox
 } from 'lucide-react';
-
-// ─── Mock data ────────────────────────────────────────────────────────────────
-const USER = {
-  name: 'Алибек Джаксыбеков',
-  company: 'ТОО «АгроПром Казахстан»',
-  bin: '210840003412',
-  avatar: null,
-};
-
-const STATS = [
-  { label: 'Всего заявок',      value: 12, icon: FileText,     color: 'text-accent',          bg: 'bg-accent/10' },
-  { label: 'На рассмотрении',   value: 3,  icon: Clock,        color: 'text-yellow-400',      bg: 'bg-yellow-400/10' },
-  { label: 'Одобрено',          value: 7,  icon: CheckCircle2, color: 'text-emerald-400',     bg: 'bg-emerald-400/10' },
-  { label: 'Отклонено',         value: 2,  icon: XCircle,      color: 'text-rose-400',        bg: 'bg-rose-400/10' },
-];
+import { useAuthStore } from '../../store/authStore';
+import { useApplicationsStore } from '../../store/applicationsStore';
+import { useNotificationsStore } from '../../store/notificationsStore';
 
 const STATUS_META = {
   pending:   { label: 'На рассмотрении', color: 'text-yellow-400',  bg: 'bg-yellow-400/10',  dot: 'bg-yellow-400' },
@@ -29,18 +17,15 @@ const STATUS_META = {
   docs:      { label: 'Нужны документы', color: 'text-blue-400',    bg: 'bg-blue-400/10',    dot: 'bg-blue-400' },
 };
 
-const APPLICATIONS = [
+const MOCK_APPLICATIONS = [
   { id: 'APP-2024-0112', service: 'Микрокредитование МСБ', org: 'КМБ', amount: '₸15 000 000', status: 'pending',  date: '12 мая 2025',  updated: '2 дня назад' },
   { id: 'APP-2024-0098', service: 'Гарантирование займов',  org: 'КГФ', amount: '₸50 000 000', status: 'approved', date: '3 апр 2025',   updated: '5 дней назад' },
   { id: 'APP-2024-0081', service: 'Лизинг оборудования',    org: 'БРК', amount: '₸8 200 000',  status: 'docs',     date: '21 мар 2025',  updated: '1 день назад' },
-  { id: 'APP-2024-0067', service: 'Экспортное страхование', org: 'КazExport', amount: '₸3 500 000', status: 'rejected', date: '14 фев 2025', updated: '18 дней назад' },
-  { id: 'APP-2024-0055', service: 'Субсидирование ставки',  org: 'ДБ', amount: '₸22 000 000', status: 'approved', date: '6 янв 2025',   updated: '1 мес назад' },
 ];
 
-const NOTIFICATIONS = [
+const MOCK_NOTIFICATIONS = [
   { id: 1, text: 'По заявке APP-2024-0081 требуется загрузить устав компании', time: '1 час назад', urgent: true },
   { id: 2, text: 'Заявка APP-2024-0098 одобрена. Ознакомьтесь с условиями договора', time: '5 дней назад', urgent: false },
-  { id: 3, text: 'Плановый осмотр системы 18 мая с 02:00 до 04:00', time: '7 дней назад', urgent: false },
 ];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -77,11 +62,45 @@ function StatCard({ stat, index }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const [filter, setFilter] = useState('all');
+  const { user } = useAuthStore();
+  const { applications, fetchApplications } = useApplicationsStore();
+  const { notifications, fetchNotifications } = useNotificationsStore();
+
+  useEffect(() => { fetchApplications(); }, [fetchApplications]);
+  useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
+
+  const appList = applications.length ? applications.slice(0, 5) : MOCK_APPLICATIONS;
+  const notifList = notifications.length ? notifications.slice(0, 3) : MOCK_NOTIFICATIONS;
+
+  const normalizeApp = (a) => ({
+    id: a.id,
+    service: a.service?.title ?? a.service ?? a.service_title ?? '—',
+    org: a.subsidiary?.name ?? a.org ?? '—',
+    amount: typeof a.amount === 'string'
+      ? a.amount
+      : (a.amount != null ? `₸${Number(a.amount).toLocaleString('ru')}` : (a.amount_label ?? '—')),
+    status: a.status ?? 'pending',
+    date: a.created_at ? new Date(a.created_at).toLocaleDateString('ru-KZ') : (a.date ?? '—'),
+    updated: a.updated_at ? new Date(a.updated_at).toLocaleDateString('ru-KZ') : (a.updated ?? '—'),
+  });
+
+  const normalized = appList.map(normalizeApp);
 
   const filtered = useMemo(() =>
-    filter === 'all' ? APPLICATIONS : APPLICATIONS.filter(a => a.status === filter),
-    [filter]
+    filter === 'all' ? normalized : normalized.filter(a => a.status === filter),
+    [filter, normalized]
   );
+
+  const stats = [
+    { label: 'Всего заявок',    value: appList.length, icon: FileText,     color: 'text-accent',       bg: 'bg-accent/10' },
+    { label: 'На рассмотрении', value: appList.filter(a => ['pending','submitted'].includes(a.status ?? a)).length, icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
+    { label: 'Одобрено',        value: appList.filter(a => a.status === 'approved').length, icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+    { label: 'Отклонено',       value: appList.filter(a => a.status === 'rejected').length, icon: XCircle,      color: 'text-rose-400',    bg: 'bg-rose-400/10' },
+  ];
+
+  const displayName = user?.full_name ?? user?.email ?? 'Пользователь';
+  const displayCompany = user?.company_name ?? user?.bin_number ? `БИН: ${user.bin_number}` : 'Ваша компания';
+  const displayBin = user?.bin_number ?? '—';
 
   const tabs = [
     { key: 'all',      label: 'Все' },
@@ -109,10 +128,10 @@ export default function Dashboard() {
                 <User size={22} className="text-accent" />
               </div>
               <div>
-                <p className="text-white font-semibold text-lg leading-tight">{USER.name}</p>
+                <p className="text-white font-semibold text-lg leading-tight">{displayName}</p>
                 <div className="flex items-center gap-2 mt-0.5">
                   <Building2 size={12} className="text-white/40" />
-                  <p className="text-white/50 text-sm">{USER.company}</p>
+                  <p className="text-white/50 text-sm">{displayCompany}</p>
                 </div>
               </div>
             </div>
@@ -134,7 +153,7 @@ export default function Dashboard() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {STATS.map((s, i) => <StatCard key={s.label} stat={s} index={i} />)}
+          {stats.map((s, i) => <StatCard key={s.label} stat={s} index={i} />)}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -175,7 +194,7 @@ export default function Dashboard() {
               )}
               {filtered.map((app, i) => (
                 <motion.div
-                  key={app.id}
+                  key={app.id ?? i}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05, duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
@@ -222,11 +241,11 @@ export default function Dashboard() {
                   Уведомления
                 </h3>
                 <span className="w-5 h-5 rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center">
-                  {NOTIFICATIONS.filter(n => n.urgent).length}
+                  {notifList.filter(n => n.urgent || !n.is_read).length}
                 </span>
               </div>
               <div className="space-y-3">
-                {NOTIFICATIONS.map((n, i) => (
+                {notifList.map((n, i) => (
                   <motion.div
                     key={n.id}
                     initial={{ opacity: 0, x: 10 }}
@@ -241,8 +260,8 @@ export default function Dashboard() {
                       }
                     </div>
                     <div>
-                      <p className="text-xs text-primary/75 leading-relaxed">{n.text}</p>
-                      <p className="text-[10px] text-primary/35 mt-1">{n.time}</p>
+                      <p className="text-xs text-primary/75 leading-relaxed">{n.message ?? n.text}</p>
+                      <p className="text-[10px] text-primary/35 mt-1">{n.time ?? (n.timestamp ? new Date(n.timestamp).toLocaleDateString('ru-KZ') : '')}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -278,8 +297,8 @@ export default function Dashboard() {
             {/* Profile card */}
             <div className="bg-primary rounded-2xl p-5">
               <p className="text-white/50 text-xs mb-3">Реквизиты компании</p>
-              <p className="text-white font-semibold text-sm">{USER.company}</p>
-              <p className="text-white/40 text-xs mt-1">БИН: {USER.bin}</p>
+              <p className="text-white font-semibold text-sm">{displayCompany}</p>
+              <p className="text-white/40 text-xs mt-1">БИН: {displayBin}</p>
               <Link
                 to="/cabinet/profile"
                 className="inline-flex items-center gap-1.5 mt-4 text-accent text-xs font-medium hover:text-accent-light transition-colors duration-150"

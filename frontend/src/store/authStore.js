@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:1489/api';
+
 export const useAuthStore = create(set => ({
   user: null,
   isAuth: false,
@@ -8,7 +10,7 @@ export const useAuthStore = create(set => ({
   login: async (email, password) => {
     set({ loading: true });
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -39,7 +41,7 @@ export const useAuthStore = create(set => ({
   register: async (email, password, fullName, binNumber) => {
     set({ loading: true });
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, full_name: fullName, bin_number: binNumber })
@@ -83,7 +85,7 @@ export const useAuthStore = create(set => ({
       set({ isAuth: true, loading: true });
       
       // Fetch user profile
-      fetch('/api/auth/profile', {
+      fetch(`${API_BASE_URL}/auth/profile`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

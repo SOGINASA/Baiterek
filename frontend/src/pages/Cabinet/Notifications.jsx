@@ -1,141 +1,109 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../../store/authStore';
+import { motion } from 'framer-motion';
+import { Bell, ClipboardList, Paperclip, CheckCircle2, Info, AlertCircle, CheckCheck } from 'lucide-react';
 import { useNotificationsStore } from '../../store/notificationsStore';
 import Button from '../../components/ui/Button';
-import Spinner from '../../components/ui/Spinner';
+
+const TYPE_ICON = {
+  application_status: ClipboardList,
+  document_required:  Paperclip,
+  document_approved:  CheckCircle2,
+  general:            Info,
+};
+
+function NotifIcon({ type, urgent }) {
+  if (urgent) return <AlertCircle size={15} className="text-accent flex-shrink-0 mt-0.5" />;
+  const Icon = TYPE_ICON[type] ?? Bell;
+  return <Icon size={15} className="text-primary/35 flex-shrink-0 mt-0.5" />;
+}
 
 export default function Notifications() {
-  const { user } = useAuthStore();
-  const { notifications, unreadCount, markAsRead, clearNotifications } = useNotificationsStore();
+  const { notifications, unreadCount, fetchNotifications, markAsRead, markAllAsRead } = useNotificationsStore();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // In a real app, we would fetch notifications from the backend
-    // For now, we'll use the mock data from the notifications store
-    // But we can also simulate fetching from backend
-    const fetchNotifications = async () => {
-      // We'll simulate an API call
-      // In a real app, we would call the backend API here
-      // For now, we'll just use the existing store data
-    };
+  useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
 
-    fetchNotifications();
-  }, []);
-
-  const handleMarkAsRead = (id) => {
-    markAsRead(id);
-    // In a real app, we would also update the backend
-    // markNotificationRead(id);
-  };
-
-  const handleClearAll = () => {
-    if (window.confirm('Вы уверены, что хотите удалить все уведомления?')) {
-      clearNotifications();
-      // In a real app, we would also clear from backend
-    }
-  };
+  const isEmpty = notifications.length === 0;
 
   return (
-    <div className="min-h-screen bg-surface">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-8">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+      <div className="flex items-center justify-between mb-6">
+        <div>
           <h1 className="text-2xl font-bold text-primary">Уведомления</h1>
-          <p className="text-primary/55 mt-1">
-            История уведомлений о статусе заявок и важных событиях
+          <p className="text-primary/50 text-sm mt-0.5">
+            {unreadCount > 0 ? `${unreadCount} непрочитанных` : 'Все прочитано'}
           </p>
         </div>
-        
-        {notifications.length === 0 ? (
-          <div className="text-center py-12">
-            <h2 className="text-xl font-medium text-primary/60 mb-4">
-              У вас нет уведомлений
-            </h2>
-            <p className="text-primary/50">
-              Все важные события будут отображаться здесь.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-medium text-primary">
-                Уведомления ({unreadCount} непрочитанных)
-              </h2>
-              <Button
-                variant="outline"
-                onClick={handleClearAll}
-                className="text-sm"
+        {unreadCount > 0 && (
+          <Button variant="outline" size="sm" onClick={markAllAsRead} className="flex items-center gap-2">
+            <CheckCheck size={14} />
+            Прочитать все
+          </Button>
+        )}
+      </div>
+
+      {isEmpty ? (
+        <div className="text-center py-16">
+          <Bell size={44} className="text-primary/15 mx-auto mb-3" />
+          <h2 className="text-base font-medium text-primary/50 mb-1">Нет уведомлений</h2>
+          <p className="text-primary/40 text-sm">Все важные события будут отображаться здесь.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {notifications.map((n, i) => {
+            const isRead = n.is_read || n.read;
+            return (
+              <motion.div
+                key={n.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04, duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+                className={`bg-surface border rounded-2xl overflow-hidden transition-colors duration-150 ${
+                  isRead ? 'border-primary/8' : 'border-accent/20 bg-accent/3'
+                }`}
               >
-                Очистить все
-              </Button>
-            </div>
-            
-            <div className="space-y-3">
-              {notifications.map((notification) => (
-                <div key={notification.id} className="bg-bg border border-primary/5 rounded-lg overflow-hidden">
-                  <div className="px-4 py-3 flex justify-between items-start border-b border-primary/5">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-5 h-5 flex-shrink-0 bg-primary/10 rounded-flex items-center justify-center">
-                          {/* Notification type icon */}
-                          {notification.type === 'application_status' && (
-                            <span className="text-primary/60">📋</span>
-                          )}
-                          {notification.type === 'document_required' && (
-                            <span className="text-primary/60">📎</span>
-                          )}
-                          {notification.type === 'document_approved' && (
-                            <span className="text-primary/60">✅</span>
-                          )}
-                          {notification.type === 'general' && (
-                            <span className="text-primary/60">ℹ️</span>
-                          )}
-                        </div>
-                        <div>
-                          <h3 className="font-medium text-primary">{notification.title}</h3>
-                          <p className="text-primary/50 text-sm">
-                            {new Date(notification.timestamp).toLocaleString('ru-KZ')}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right space-x-2">
-                      {!notification.read && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleMarkAsRead(notification.id)}
-                          className="text-accent hover:text-accent-light"
+                <div className="p-4 flex gap-3">
+                  <NotifIcon type={n.type} urgent={!isRead && n.urgent} />
+                  <div className="flex-1 min-w-0">
+                    {n.title && (
+                      <p className={`text-sm font-semibold mb-0.5 ${isRead ? 'text-primary/70' : 'text-primary'}`}>
+                        {n.title}
+                      </p>
+                    )}
+                    <p className={`text-sm leading-relaxed ${isRead ? 'text-primary/55' : 'text-primary/80'}`}>
+                      {n.message ?? n.text}
+                    </p>
+                    <div className="flex items-center gap-3 mt-2">
+                      <span className="text-xs text-primary/35">
+                        {n.timestamp
+                          ? new Date(n.timestamp).toLocaleString('ru-KZ', { dateStyle: 'short', timeStyle: 'short' })
+                          : n.time}
+                      </span>
+                      {n.related_application_id && (
+                        <button
+                          onClick={() => navigate(`/cabinet/applications/${n.related_application_id}`)}
+                          className="text-xs text-accent hover:text-accent-light transition-colors duration-150"
                         >
-                          Отметить как прочитанное
-                        </Button>
+                          Перейти к заявке →
+                        </button>
                       )}
                     </div>
                   </div>
-                  <div className="px-4 py-3">
-                    <p className="text-primary/60 whitespace-pre-line">
-                      {notification.message}
-                    </p>
-                    
-                    {notification.related_application_id && (
-                      <div className="mt-3">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            navigate(`/cabinet/applications/${notification.related_application_id}`);
-                          }}
-                        >
-                          Перейти к заявке
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+                  {!isRead && (
+                    <button
+                      onClick={() => markAsRead(n.id)}
+                      className="flex-shrink-0 text-xs text-primary/40 hover:text-accent transition-colors duration-150 self-start pt-0.5"
+                    >
+                      <CheckCircle2 size={16} />
+                    </button>
+                  )}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,348 +1,225 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useAuthStore } from '../../store/authStore';
+import { useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import {
+  FileText, ChevronLeft, Clock, CheckCircle2, XCircle,
+  AlertCircle, Building2, CalendarDays, Download,
+} from 'lucide-react';
 import { useApplicationsStore } from '../../store/applicationsStore';
 import Button from '../../components/ui/Button';
-import Input from '../../components/ui/Input';
 import Spinner from '../../components/ui/Spinner';
-import { serviceStatusBadge } from '../../utils/helpers';
+
+const STATUS_META = {
+  draft:      { label: 'Черновик',        color: 'text-primary/60',  bg: 'bg-primary/8',      dot: 'bg-primary/40' },
+  pending:    { label: 'На рассмотрении', color: 'text-yellow-500',  bg: 'bg-yellow-400/10',  dot: 'bg-yellow-400' },
+  submitted:  { label: 'На рассмотрении', color: 'text-yellow-500',  bg: 'bg-yellow-400/10',  dot: 'bg-yellow-400' },
+  approved:   { label: 'Одобрено',        color: 'text-emerald-500', bg: 'bg-emerald-400/10', dot: 'bg-emerald-400' },
+  rejected:   { label: 'Отклонено',       color: 'text-rose-500',    bg: 'bg-rose-400/10',    dot: 'bg-rose-400' },
+  docs:       { label: 'Нужны документы', color: 'text-blue-500',    bg: 'bg-blue-400/10',    dot: 'bg-blue-400' },
+};
+
+function StatusBadge({ status }) {
+  const m = STATUS_META[status] ?? STATUS_META.draft;
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${m.color} ${m.bg}`}>
+      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${m.dot}`} />
+      {m.label}
+    </span>
+  );
+}
+
+function InfoRow({ label, value }) {
+  return (
+    <div>
+      <p className="text-xs text-primary/40 mb-0.5">{label}</p>
+      <p className="text-sm font-medium text-primary">{value || '—'}</p>
+    </div>
+  );
+}
 
 export default function ApplicationDetail() {
-  const { user } = useAuthStore();
-  const { application, loading, error, fetchApplication } = useApplicationsStore();
   const { id } = useParams();
   const navigate = useNavigate();
+  const { application, loading, error, fetchApplication } = useApplicationsStore();
 
-  const [formData, setFormData] = useState({});
-  const [statusReason, setStatusReason] = useState('');
-  const [submitLoading, setSubmitLoading] = useState(false);
-
-  useEffect(() => {
-    if (id) {
-      fetchApplication(parseInt(id));
-    }
-  }, [id, fetchApplication]);
-
-  useEffect(() => {
-    if (application && Object.keys(formData).length === 0) {
-      setFormData(application.form_data || {});
-    }
-  }, [application]);
+  useEffect(() => { if (id) fetchApplication(id); }, [id, fetchApplication]);
 
   if (loading && !application) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface">
-        <Spinner />
+      <div className="flex items-center justify-center py-32">
+        <Spinner size="lg" />
       </div>
     );
   }
 
-  if (error) {
+  if (error || !application) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface p-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-destructive mb-4">
-            Ошибка загрузки заявки
-          </h2>
-          <p className="text-primary/60">{error}</p>
-          <Button onClick={() => navigate('/cabinet/applications')}>
-            Вернуться к списку заявок
-          </Button>
-        </div>
+      <div className="max-w-2xl mx-auto px-4 py-20 text-center">
+        <FileText size={44} className="text-primary/20 mx-auto mb-3" />
+        <h1 className="text-lg font-semibold text-primary mb-2">
+          {error ? 'Ошибка загрузки' : 'Заявка не найдена'}
+        </h1>
+        <p className="text-primary/50 text-sm mb-6">{error ?? 'Заявка с указанным ID не существует.'}</p>
+        <Button variant="outline" onClick={() => navigate('/cabinet/applications')}>
+          <ChevronLeft size={15} className="mr-1" />
+          К списку заявок
+        </Button>
       </div>
     );
   }
 
-  if (!application) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-surface p-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-destructive mb-4">
-            Заявка не найдена
-          </h2>
-          <p className="text-primary/60">Заявка с указанным ID не существует или у вас нет доступа к ней.</p>
-          <Button onClick={() => navigate('/cabinet/applications')}>
-            Вернуться к списку заявок
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // Check if current user owns this application
-  if (application.user_id !== user.id) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-surface p-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-destructive mb-4">
-            Доступ запрещен
-          </h2>
-          <p className="text-primary/60">У вас нет прав для просмотра этой заявки.</p>
-          <Button onClick={() => navigate('/cabinet/applications')}>
-            Вернуться к списку заявок
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitLoading(true);
-    
-    try {
-      // Update application
-      // In a real app, this would be an API call
-      // For now, we'll just show a success message
-      alert('Заявка успешно обновлена!');
-      setSubmitLoading(false);
-      navigate('/cabinet/applications');
-    } catch (error) {
-      console.error('Application update error:', error);
-      setSubmitLoading(false);
-      alert('Ошибка обновления заявки');
-    }
-  };
-
-  const handleDelete = () => {
-    if (window.confirm('Вы уверены, что хотите удалить эту заявку? Это действие нельзя отменить.')) {
-      // In a real app, this would be an API call
-      alert('Заявка успешно удалена!');
-      navigate('/cabinet/applications');
-    }
-  };
+  const docs = application.documents ?? [];
+  const formEntries = application.form_data ? Object.entries(application.form_data) : [];
 
   return (
-    <div className="min-h-screen bg-surface">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-primary">Детали заявки</h1>
-          <p className="text-primary/55 mt-1">
-            Информация о вашей заявке на получение услуги
-          </p>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-5">
+
+      {/* Back */}
+      <Link to="/cabinet/applications"
+        className="inline-flex items-center gap-1.5 text-sm text-primary/50 hover:text-accent transition-colors duration-150">
+        <ChevronLeft size={15} />
+        Мои заявки
+      </Link>
+
+      {/* Header card */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+        className="bg-surface rounded-2xl border border-primary/8 p-6"
+        style={{ boxShadow: 'var(--shadow-card)' }}
+      >
+        <div className="flex items-start justify-between gap-4 mb-5">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-mono text-primary/35 mb-1">#{application.id}</p>
+            <h1 className="text-lg font-bold text-primary leading-snug">
+              {application.service?.title ?? 'Заявка на услугу'}
+            </h1>
+            {application.service?.subtitle && (
+              <p className="text-sm text-primary/50 mt-1">{application.service.subtitle}</p>
+            )}
+          </div>
+          <StatusBadge status={application.status} />
         </div>
-        
-        <div className="bg-bg border border-primary/5 rounded-lg overflow-hidden">
-          {/* Application Header */}
-          <div className="px-5 py-4 border-b border-primary/5 flex justify-between items-start">
-            <div className="flex-1 min-w-0">
-              <h2 className="font-medium text-primary truncate">
-                {application.service?.title || 'Заявка на услугу'}
-              </h2>
-              <p className="text-primary/50 text-sm mt-1 truncate">
-                {application.service?.subtitle || ''}
-              </p>
-            </div>
-            <div className="text-right space-x-3">
-              {serviceStatusBadge(application.status)}
-              <span className="text-xs text-primary/50">
-                {new Date(application.created_at).toLocaleDateString('ru-KZ')}
-              </span>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <InfoRow
+            label="Организация"
+            value={application.service?.subsidiary?.name ?? application.org ?? '—'}
+          />
+          <InfoRow
+            label="Дата подачи"
+            value={application.created_at
+              ? new Date(application.created_at).toLocaleDateString('ru-KZ')
+              : application.date ?? '—'}
+          />
+          <InfoRow
+            label="Сумма"
+            value={application.service?.amount_max
+              ? `до ₸${Number(application.service.amount_max).toLocaleString('ru')}`
+              : '—'}
+          />
+          <InfoRow
+            label="Срок рассмотрения"
+            value={application.service?.timeline ?? '—'}
+          />
+        </div>
+
+        {application.status_reason && (
+          <div className="mt-5 p-4 bg-amber-400/8 border border-amber-400/20 rounded-xl flex gap-3">
+            <AlertCircle size={15} className="text-amber-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-medium text-amber-700 mb-0.5">Комментарий специалиста</p>
+              <p className="text-sm text-amber-700/80">{application.status_reason}</p>
             </div>
           </div>
-          
-          {/* Application Details */}
-          <div className="px-5 py-6 space-y-6">
-            {/* Basic Info */}
-            <div className="space-y-4">
-              <h3 className="font-medium text-primary">Информация о заявке</h3>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <p className="text-xs text-primary/50">Номер заявки</p>
-                  <p className="text-primary/60 font-medium">#{application.id}</p>
+        )}
+      </motion.div>
+
+      {/* Form data */}
+      {formEntries.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05, duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+          className="bg-surface rounded-2xl border border-primary/8 overflow-hidden"
+          style={{ boxShadow: 'var(--shadow-card)' }}
+        >
+          <div className="px-6 py-4 border-b border-primary/8">
+            <h2 className="text-sm font-semibold text-primary">Данные заявки</h2>
+          </div>
+          <div className="divide-y divide-primary/6">
+            {formEntries.map(([key, value]) => (
+              <div key={key} className="px-6 py-3.5 flex items-start justify-between gap-4">
+                <p className="text-xs text-primary/40 capitalize flex-shrink-0 w-40">{key.replace(/_/g, ' ')}</p>
+                <p className="text-sm text-primary text-right">{value ?? '—'}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Documents */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+        className="bg-surface rounded-2xl border border-primary/8 overflow-hidden"
+        style={{ boxShadow: 'var(--shadow-card)' }}
+      >
+        <div className="px-6 py-4 border-b border-primary/8">
+          <h2 className="text-sm font-semibold text-primary">Документы</h2>
+        </div>
+
+        {docs.length === 0 ? (
+          <div className="px-6 py-10 text-center">
+            <FileText size={32} className="text-primary/15 mx-auto mb-2" />
+            <p className="text-sm text-primary/40">Документы не прикреплены</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-primary/6">
+            {docs.map(doc => (
+              <div key={doc.id} className="px-6 py-4 flex items-center gap-4">
+                <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
+                  <FileText size={16} className="text-accent" />
                 </div>
-                <div>
-                  <p className="text-xs text-primary/50">Дата создания</p>
-                  <p className="text-primary/60">
-                    {new Date(application.created_at).toLocaleDateString('ru-KZ')}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-primary truncate">{doc.file_name}</p>
+                  <p className="text-xs text-primary/40 mt-0.5">
+                    {doc.file_type?.toUpperCase()} · {doc.file_size ? `${(doc.file_size / 1024 / 1024).toFixed(1)} МБ` : '—'}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs text-primary/50">Статус</p>
-                  <p className="text-primary/60 font-medium">
-                    {application.status
-                      .charAt(0)
-                      .toUpperCase() + application.status.slice(1)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-primary/50">Тип услуги</p>
-                  <p className="text-primary/60">
-                    {application.service?.type
-                      ?.charAt(0)
-                      .toUpperCase() + application.service?.type?.slice(1)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-primary/50">Сумма</p>
-                  <p className="text-primary/60 font-medium">
-                    {application.service?.amount_max
-                      ? `${application.service.amount_max
-                          .toLocaleString()} ₸`
-                      : 'По запросу'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-primary/50">Срок рассмотрения</p>
-                  <p className="text-primary/60">
-                    {application.service?.timeline || 'По запросу'}
-                  </p>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    doc.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                    doc.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                    'bg-primary/8 text-primary/60'
+                  }`}>
+                    {doc.status === 'approved' ? 'Принят' : doc.status === 'rejected' ? 'Отклонён' : 'На проверке'}
+                  </span>
+                  <button
+                    onClick={() => window.open(`/api/documents/${doc.id}/download`, '_blank')}
+                    className="p-1.5 rounded-lg hover:bg-bg text-primary/40 hover:text-accent transition-colors duration-150"
+                  >
+                    <Download size={14} />
+                  </button>
                 </div>
               </div>
-              
-              {application.status_reason && (
-                <div className="mt-4">
-                  <p className="text-xs text-primary/50">Комментарий специалиста</p>
-                  <p className="text-primary/60 whitespace-pre-line">
-                    {application.status_reason}
-                  </p>
-                </div>
-              )}
-            </div>
-            
-            {/* Form Data */}
-            <div className="space-y-4">
-              <h3 className="font-medium text-primary">Данные заявки</h3>
-              {Object.keys(application.form_data).length > 0 ? (
-                <div className="space-y-3">
-                  {Object.entries(application.form_data).map(([key, value]) => (
-                    <div key={key} className="border border-primary/5 rounded-lg p-4">
-                      <p className="text-xs text-primary/50 mb-1">{key}</p>
-                      <p className="text-primary/60 whitespace-pre-line">
-                        {value !== null && value !== undefined ? value : 'Не указано'}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-primary/50 text-center py-4">
-                  Данные заявки не были заполнены
-                </p>
-              )}
-            </div>
-            
-            {/* Documents */}
-            <div className="space-y-4">
-              <h3 className="font-medium text-primary">Документы</h3>
-              {application.documents && application.documents.length > 0 ? (
-                <div className="space-y-3">
-                  {application.documents.map((doc) => (
-                    <div key={doc.id} className="border border-primary/5 rounded-lg overflow-hidden">
-                      <div className="px-4 py-3 flex justify-between items-center border-b border-primary/5">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-5 h-5 flex-shrink-0">
-                            {/* Document type icon */}
-                            <span className="text-primary/60">
-                              {doc.file_type.toUpperCase()}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="font-medium text-primary">{doc.file_name}</p>
-                            <p className="text-primary/50 text-sm">
-                              {(doc.file_size / 1024 / 1024).toFixed(2)} МБ
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-xs space-x-2">
-                          <span className={`px-2 py-0.5 rounded text-xs ${
-                            doc.status === 'approved' ? 'bg-green-100 text-green-800' :
-                            doc.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                            doc.status === 'signed' ? 'bg-blue-100 text-blue-800' :
-                            'bg-primary/10 text-primary'
-                          }`}>
-                            {doc.status
-                              .charAt(0)
-                              .toUpperCase() + doc.status.slice(1)}
-                          </span>
-                          {doc.is_signed && (
-                            <span className="text-primary/60">✓ Подписано</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="px-4 py-3">
-                        <div className="flex items-center space-x-3">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              // In a real app, this would trigger download
-                              window.open(`/api/documents/${doc.id}/download`, '_blank');
-                            }}
-                          >
-                            Скачать
-                          </Button>
-                          
-                          {!doc.is_signed && (
-                            <Button
-                              size="sm"
-                              onClick={() => {
-                                // In a real app, this would trigger e-signature process
-                                alert('Функция электронной подписи будет доступна в будущих версиях');
-                              }}
-                            >
-                              Подписать
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-primary/50 text-center py-4">
-                  К заявке не прикреплено документов
-                </p>
-              )}
-            </div>
+            ))}
           </div>
-          
-          {/* Actions */}
-          <div className="px-5 py-5 border-t border-primary/5 flex justify-end space-x-4">
-            {application.status === 'draft' && (
-              <>
-                <Button
-                  onClick={handleSubmit}
-                  disabled={submitLoading}
-                >
-                  {submitLoading ? 'Сохранение...' : 'Сохранить изменения'}
-                </Button>
-                
-                <Button
-                  onClick={() => navigate(`/cabinet/applications/${application.id}/documents`)}
-                  className="ml-2"
-                >
-                  Управление документами
-                </Button>
-              </>
-            )}
-            
-            {application.status === 'submitted' && (
-              <>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleDelete}
-                >
-                  Удалить заявку
-                </Button>
-              </>
-            )}
-            
-            {application.status === 'draft' && (
-              <Button
-                size="sm"
-                ml="2"
-                onClick={() => {
-                  // In a real app, this would be an API call to submit
-                  alert('Заявка отправлена на рассмотрение!');
-                  navigate('/cabinet/applications');
-                }}
-              >
-                Отправить на рассмотрение
-              </Button>
-            )}
-          </div>
-        </div>
+        )}
+      </motion.div>
+
+      {/* Actions */}
+      <div className="flex justify-end gap-3 pb-4">
+        <Button variant="outline" onClick={() => navigate('/cabinet/applications')}>
+          Назад
+        </Button>
+        {application.status === 'draft' && (
+          <Button onClick={() => alert('Отправлено на рассмотрение')}>
+            Отправить заявку
+          </Button>
+        )}
       </div>
     </div>
   );

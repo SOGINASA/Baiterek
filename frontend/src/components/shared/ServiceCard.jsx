@@ -6,9 +6,12 @@ import { formatAmount } from '../../utils/formatters';
 import { route, ROUTES } from '../../constants/routes';
 
 export default function ServiceCard({ service, compact = false }) {
-  const category    = CATEGORIES.find(c => c.id === service.category);
-  const subsidiary  = SUBSIDIARIES.find(s => s.id === service.subsidiaryId);
+  const category    = CATEGORIES.find(c => c.id === service.category_id);
+  const subsidiary  = SUBSIDIARIES.find(s => s.id === service.subsidiary_id);
   const href        = route(ROUTES.SERVICE, { slug: service.slug });
+  
+  // Parse JSON fields if they're strings
+  const tags = typeof service.tags === 'string' ? JSON.parse(service.tags || '[]') : service.tags || [];
 
   if (compact) {
     return (
@@ -46,24 +49,24 @@ export default function ServiceCard({ service, compact = false }) {
       </div>
 
       {/* Metrics */}
-      {(service.rate || service.term || service.amount) && (
+      {(service.rate || service.term || service.amount_max) && (
         <div className="flex gap-4 pt-1 border-t border-primary/8">
-          {service.rate?.label && (
+          {service.rate && (
             <div className="flex flex-col gap-0.5">
               <span className="text-[10px] text-primary/45 uppercase tracking-wide">Ставка</span>
-              <span className="text-xs font-semibold text-secondary">{service.rate.label}</span>
+              <span className="text-xs font-semibold text-secondary">{service.rate}</span>
             </div>
           )}
-          {service.term?.label && (
+          {service.term && (
             <div className="flex flex-col gap-0.5">
               <span className="text-[10px] text-primary/45 uppercase tracking-wide">Срок</span>
-              <span className="text-xs font-semibold text-secondary">{service.term.label}</span>
+              <span className="text-xs font-semibold text-secondary">{service.term}</span>
             </div>
           )}
-          {service.amount?.max > 0 && (
+          {service.amount_max > 0 && (
             <div className="flex flex-col gap-0.5">
               <span className="text-[10px] text-primary/45 uppercase tracking-wide">Сумма</span>
-              <span className="text-xs font-semibold text-secondary">до {formatAmount(service.amount.max)}</span>
+              <span className="text-xs font-semibold text-secondary">до {formatAmount(service.amount_max)}</span>
             </div>
           )}
         </div>
@@ -72,11 +75,11 @@ export default function ServiceCard({ service, compact = false }) {
       {/* Footer */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-wrap gap-1">
-          {service.tags?.slice(0, 2).map(tag => (
-            <Badge key={tag} variant="muted">{tag}</Badge>
+          {tags.slice(0, 2).map((tag, idx) => (
+            <Badge key={idx} variant="muted">{tag}</Badge>
           ))}
-          {service.tags?.length > 2 && (
-            <Badge variant="muted">+{service.tags.length - 2}</Badge>
+          {tags.length > 2 && (
+            <Badge variant="muted">+{tags.length - 2}</Badge>
           )}
         </div>
         <Link

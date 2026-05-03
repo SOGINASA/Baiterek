@@ -53,22 +53,22 @@ class Service(db.Model):
             'subtitle': self.subtitle,
             'description': self.description,
             'result': self.result,
-            'category': self.category_id,
+            'category_id': self.category_id,
             'type': self.type,
-            'subsidiaryId': self.subsidiary_id,
-            'amount': {
-                'min': self.amount_min or 0,
-                'max': self.amount_max or 0,
-            },
-            'rate': {'label': self.rate or 'По запросу'},
-            'term': {'label': self.term or 'По запросу'},
-            'tags': json.loads(self.tags) if self.tags else [],
-            'conditions': json.loads(self.conditions) if self.conditions else [],
-            'documents': json.loads(self.documents) if self.documents else [],
+            'subsidiary_id': self.subsidiary_id,
+            'amount_min': self.amount_min or 0,
+            'amount_max': self.amount_max or 0,
+            'rate': self.rate or 'По запросу',
+            'term': self.term or 'По запросу',
+            'tags': self.tags,  # Already JSON string
+            'conditions': self.conditions,  # Already JSON string
+            'documents': self.documents,  # Already JSON string
             'timeline': self.timeline,
-            'popular': self.is_popular,
-            'priority': self.is_priority,
-            'updatedAt': self.updated_at.isoformat() if self.updated_at else None,
+            'is_popular': self.is_popular,
+            'is_priority': self.is_priority,
+            'is_published': self.is_published,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
         if with_form and self.form_schema:
             data['form_schema'] = self.form_schema.to_dict()

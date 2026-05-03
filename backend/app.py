@@ -2,13 +2,14 @@ import os
 import json
 from datetime import timedelta
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from dotenv import load_dotenv
 
 from config import Config
 from models import db, User, Service, Application, Notification, News, Article
+from utils.file_handler import allowed_file, save_file
 
 # Загружаем переменные окружения
 load_dotenv()
@@ -267,8 +268,164 @@ def create_app():
         db.session.commit()
         
         return jsonify(application.to_dict()), 200
-    
-    
+
+    # ========== DOCUMENT ENDPOINTS ==========
+
+    @app.route('/api/applications/<int:app_id>/documents', methods=['POST'])
+    @jwt_required()
+    def upload_document(app_id):
+        """Загрузить документ к заявке"""
+        user_id = get_jwt_identity()
+        
+        application = Application.query.get(app_id)
+        if not application or application.user_id != user_id:
+            return jsonify({'error': 'Заявка не найдена'}), 404
+        
+        if 'file' not in request.files:
+            return jsonify({'error': 'Файл не предоставлен'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'Файл не выбран'}), 400
+        
+        file_details = save_file(file, app_id)
+        if not file_details:
+            return jsonify({'error': 'Неподдерживаемый тип файла'}), 400
+        
+        document = Document(
+            application_id=app_id,
+            file_name=file_details['file_name'],
+            file_path=file_details['file_path'],
+            file_type=file_details['file_type'],
+            file_size=file_details['file_size'],
+            uploaded_by_user=True
+        )
+        
+        db.session.add(document)
+        db.session.commit()
+        
+        # Создаём уведомление о загрузке документа
+        notification = Notification(
+            user_id=user_id,
+            title='Документ загружен',
+            message=f'Документ "{file_details["file_name"]}" успешно загружен к вашей заявке',
+            type='document_required',
+            related_application_id=app_id
+        )
+        db.session.add(notification)
+        db.session.commit()
+        
+        return jsonify(document.to_dict()), 201
+
+    @app.route('/api/documents/<int:doc_id>', methods=['GET'])
+    @jwt_required()
+    def get_document(doc_id):
+        """Получить информацию о документе"""
+        user_id = get_jwt_identity()
+        
+        document = Document.query.get(doc_id)
+        if not document:
+            return jsonify({'error': 'Документ не найден'}), 404
+        
+        # Проверяем, что документ принадлежит текущему пользователю
+        application = Application.query.get(document.application_id)
+        if not application or application.user_id != user_id:
+            return jsonify({'error': 'Документ не найден'}), 404
+        
+        return jsonify(document.to_dict()), 200
+
+    @app.route('/api/documents/<int:doc_id>/download', methods=['GET'])
+    @jwt_required()
+    def download_document(doc_id):
+        """Скачать документ"""
+        user_id = get_jwt_identity()
+        
+        document = Document.query.get(doc_id)
+        if not document:
+            return jsonify({'error': 'Документ не найден'}), 404
+        
+        # Проверяем, что документ принадлежит текущему пользователю
+        application = Application.query.get(document.application_id)
+        if not application or application.user_id != user_id:
+            return jsonify({'error': 'Документ не найден'}), 404
+        
+        try:
+            directory = os.path.dirname(document.file_path)
+            filename = os.path.basename(document.file_path)
+            return send_from_directory(directory, filename, as_attachment=True)
+        except Exception as e:
+            return jsonify({'error': 'Не удалось скачать файл'}), 500
+
+    @app.route('/api/documents/<int:doc_id>/sign', methods=['POST'])
+    @jwt_required()
+    def sign_document(doc_id):
+        """Подписать документ электронной подписью"""
+        user_id = get_jwt_identity()
+        
+        document = Document.query.get(doc_id)
+        if not document:
+            return jsonify({'error': 'Документ не найден'}), 404
+        
+        # Проверяем, что документ принадлежит текущему пользователю
+        application = Application.query.get(document.application_id)
+        if not application or application.user_id != user_id:
+            return jsonify({'error': 'Документ не найден'}), 404
+        
+        # В реальном приложении здесь будет интеграция с сервисом ЭЦП
+        # Для демонстрации просто отмечаем документ как подписанный
+        from datetime import datetime, timezone
+        document.is_signed = True
+        document.signed_at = datetime.now(timezone.utc)
+        document.status = 'signed'
+        
+        db.session.commit()
+        
+        # Создаём уведомление о подписании документа
+        notification = Notification(
+            user_id=user_id,
+            title='Документ подписан',
+            message=f'Документ "{document.file_name}" успешно подписан электронной подписью',
+            type='document_approved',
+            related_application_id=document.application_id
+        )
+        db.session.add(notification)
+        db.session.commit()
+        
+        return jsonify(document.to_dict()), 200
+
+    @app.route('/api/documents/<int:doc_id>', methods=['DELETE'])
+    @jwt_required()
+    def delete_document(doc_id):
+        """Удалить документ"""
+        user_id = get_jwt_identity()
+        
+        document = Document.query.get(doc_id)
+        if not document:
+            return jsonify({'error': 'Документ не найден'}), 404
+        
+        # Проверяем, что документ принадлежит текущему пользователю
+        application = Application.query.get(document.application_id)
+        if not application or application.user_id != user_id:
+            return jsonify({'error': 'Документ не найден'}), 404
+        
+        # Удаляем файл из файловой системы
+        try:
+            if os.path.exists(document.file_path):
+                os.remove(document.file_path)
+                
+                # Также удаляем директорию, если она пустая
+                directory = os.path.dirname(document.file_path)
+                if os.path.exists(directory) and not os.listdir(directory):
+                    os.rmdir(directory)
+        except Exception as e:
+            # Если не удалось удалить файл, всё равно удаляем запись из БД
+            pass
+        
+        db.session.delete(document)
+        db.session.commit()
+        
+        return jsonify({'message': 'Документ успешно удален'}), 200
+
     # ========== NOTIFICATIONS ENDPOINTS ==========
     
     @app.route('/api/notifications', methods=['GET'])

@@ -4,6 +4,7 @@ from datetime import timedelta
 # Получаем путь к директории backend
 BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
 DATABASE_DIR = os.path.join(BACKEND_DIR, 'database')
+UPLOAD_FOLDER = os.path.join(BACKEND_DIR, 'uploads')
 
 
 class Config:
@@ -16,6 +17,10 @@ class Config:
         f'sqlite:///{os.path.join(DATABASE_DIR, "baiterek.db")}'
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # Настройки загрузки файлов
+    UPLOAD_FOLDER = UPLOAD_FOLDER
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
     
     # JWT Настройки
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'baiterek-jwt-secret-2025')

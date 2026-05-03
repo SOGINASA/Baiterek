@@ -10,6 +10,12 @@ import NewsArticle   from './pages/News/Article';
 import Corporate     from './pages/Corporate';
 import Contacts      from './pages/Contacts';
 import Subsidiary    from './pages/Subsidiary';
+import CabinetLayout from './pages/Cabinet/CabinetLayout';
+import Profile       from './pages/Cabinet/Profile';
+import Applications  from './pages/Cabinet/Applications';
+import ApplicationDetail from './pages/Cabinet/ApplicationDetail';
+import Documents     from './pages/Cabinet/Documents';
+import Notifications from './pages/Cabinet/Notifications';
 
 export const router = createBrowserRouter([
   {
@@ -26,6 +32,16 @@ export const router = createBrowserRouter([
       { path: 'corporate',            element: <Corporate /> },
       { path: 'contacts',             element: <Contacts /> },
       { path: 'subsidiary/:id',       element: <Subsidiary /> },
+      { path: 'cabinet',              element: <CabinetLayout />, 
+        children: [
+          { index: true, element: <Profile /> },
+          { path: 'profile', element: <Profile /> },
+          { path: 'applications', element: <Applications /> },
+          { path: 'applications/:id', element: <ApplicationDetail /> },
+          { path: 'documents', element: <Documents /> },
+          { path: 'notifications', element: <Notifications /> },
+        ]
+      },
     ],
   },
 ]);

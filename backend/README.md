@@ -86,7 +86,7 @@ export FLASK_ENV=development
 flask run
 ```
 
-Приложение будет доступно на `http://localhost:5000`
+Приложение будет доступно на `http://localhost:1489`
 
 ### Продакшен
 

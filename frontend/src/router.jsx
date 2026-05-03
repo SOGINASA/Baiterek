@@ -14,7 +14,6 @@ import NewsArticle   from './pages/News/Article';
 import Corporate     from './pages/Corporate';
 import Contacts      from './pages/Contacts';
 import Subsidiary    from './pages/Subsidiary';
-import CabinetLayout from './pages/Cabinet/CabinetLayout';
 import Profile       from './pages/Cabinet/Profile';
 import Applications  from './pages/Cabinet/Applications';
 import ApplicationDetail from './pages/Cabinet/ApplicationDetail';
@@ -23,11 +22,6 @@ import Notifications from './pages/Cabinet/Notifications';
 
 // Cabinet — user personal area
 import Dashboard          from './pages/Cabinet/Dashboard';
-import Applications       from './pages/Cabinet/Applications';
-import ApplicationDetail  from './pages/Cabinet/ApplicationDetail';
-import Documents          from './pages/Cabinet/Documents';
-import Notifications      from './pages/Cabinet/Notifications';
-import Profile            from './pages/Cabinet/Profile';
 import Calculators        from './pages/Cabinet/Calculators';
 import Bookings           from './pages/Cabinet/Bookings';
 

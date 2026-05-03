@@ -149,7 +149,7 @@ export default function Documents() {
                             </div>
                             <p className="mt-2 text-sm text-primary/60">{uploadProgress}%</p>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   )}

@@ -308,7 +308,7 @@ export default function ApplicationDetail() {
                 </Button>
                 
                 <Button
-                  onClick={() => navigate(`/cabinet/applications/${application.id}/documents`)},
+                  onClick={() => navigate(`/cabinet/applications/${application.id}/documents`)}
                   className="ml-2"
                 >
                   Управление документами

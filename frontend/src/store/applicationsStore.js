@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:1489/api';
+
 export const useApplicationsStore = create(set => ({
   applications: [],
   loading: false,
@@ -9,7 +11,7 @@ export const useApplicationsStore = create(set => ({
     set({ loading: true, error: null });
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/applications', {
+      const response = await fetch(`${API_BASE_URL}/applications`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -31,7 +33,7 @@ export const useApplicationsStore = create(set => ({
     set({ loading: true, error: null });
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/applications/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/applications/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -56,7 +58,7 @@ export const useApplicationsStore = create(set => ({
     set({ loading: true, error: null });
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/applications', {
+      const response = await fetch(`${API_BASE_URL}/applications`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -86,7 +88,7 @@ export const useApplicationsStore = create(set => ({
     set({ loading: true, error: null });
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/applications/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/applications/${id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

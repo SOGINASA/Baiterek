@@ -52,7 +52,7 @@ class Config:
 
     CORS_ORIGINS = os.environ.get(
         'CORS_ORIGINS',
-        'http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001'
+        'http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001,https://baiterek-iota.vercel.app'
     ).split(',')
 
     DEFAULT_PAGE_SIZE = 20

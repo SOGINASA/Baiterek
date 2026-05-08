@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Badge from '../ui/Badge';
+import Icon from '../ui/Icon';
 import { CATEGORIES, SUBSIDIARIES } from '../../constants/categories';
 import { formatAmount } from '../../utils/formatters';
 import { route, ROUTES } from '../../constants/routes';
@@ -12,12 +13,15 @@ export default function ServiceCard({ service, compact = false }) {
   
   // Parse JSON fields if they're strings
   const tags = typeof service.tags === 'string' ? JSON.parse(service.tags || '[]') : service.tags || [];
+  // Normalize rate/term: API returns strings, mock data uses {label} objects
+  const rateStr = service.rate && typeof service.rate === 'object' ? service.rate.label : service.rate;
+  const termStr = service.term && typeof service.term === 'object' ? service.term.label : service.term;
 
   if (compact) {
     return (
       <Link to={href} className="block group">
         <div className="flex gap-3 p-3 rounded-xl hover:bg-primary/4 transition-colors duration-150">
-          <span className="text-xl flex-shrink-0 mt-0.5">{category?.icon}</span>
+          <Icon name={category?.icon} size={20} className="flex-shrink-0 mt-0.5 text-primary/60" />
           <div className="min-w-0">
             <p className="text-sm font-medium text-primary group-hover:text-secondary transition-colors duration-150 line-clamp-2">{service.title}</p>
             <p className="text-xs text-primary/50 mt-0.5">{subsidiary?.name}</p>
@@ -36,7 +40,9 @@ export default function ServiceCard({ service, compact = false }) {
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
-        <span className="text-2xl">{category?.icon}</span>
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${category?.color ?? '#0068B4'}18` }}>
+          <Icon name={category?.icon} size={20} className="text-primary/70" />
+        </div>
         {subsidiary && (
           <Badge variant="default" className="flex-shrink-0">{subsidiary.name}</Badge>
         )}
@@ -49,18 +55,18 @@ export default function ServiceCard({ service, compact = false }) {
       </div>
 
       {/* Metrics */}
-      {(service.rate || service.term || service.amount_max) && (
+      {(rateStr || termStr || service.amount_max) && (
         <div className="flex gap-4 pt-1 border-t border-primary/8">
-          {service.rate && (
+          {rateStr && (
             <div className="flex flex-col gap-0.5">
               <span className="text-[10px] text-primary/45 uppercase tracking-wide">Ставка</span>
-              <span className="text-xs font-semibold text-secondary">{service.rate}</span>
+              <span className="text-xs font-semibold text-secondary">{rateStr}</span>
             </div>
           )}
-          {service.term && (
+          {termStr && (
             <div className="flex flex-col gap-0.5">
               <span className="text-[10px] text-primary/45 uppercase tracking-wide">Срок</span>
-              <span className="text-xs font-semibold text-secondary">{service.term}</span>
+              <span className="text-xs font-semibold text-secondary">{termStr}</span>
             </div>
           )}
           {service.amount_max > 0 && (

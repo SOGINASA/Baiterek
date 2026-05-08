@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  BookMarked,
   Building2,
   Tag,
   MapPin,
@@ -10,13 +9,10 @@ import {
   Plus,
   Pencil,
   Trash2,
-  ChevronRight,
   ChevronDown,
   X,
   Check,
-  MoreHorizontal,
   GripVertical,
-  Hash,
 } from 'lucide-react';
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
@@ -308,7 +304,6 @@ export default function AdminDirectories() {
     [globalSearch]
   );
 
-  const totalItems = useMemo(() => DIRECTORIES.reduce((a, d) => a + d.count, 0), []);
 
   return (
     <div className="p-6 space-y-6">

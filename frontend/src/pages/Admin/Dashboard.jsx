@@ -1,17 +1,14 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
-  TrendingUp,
   Users,
   FileText,
   CheckCircle,
-  Clock,
   XCircle,
   ArrowUpRight,
   ArrowDownRight,
   Activity,
   BarChart2,
-  AlertCircle,
   Layers,
 } from 'lucide-react';
 

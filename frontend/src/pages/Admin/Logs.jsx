@@ -5,18 +5,12 @@ import {
   User,
   Settings,
   FileText,
-  LogIn,
-  LogOut,
-  Trash2,
-  Pencil,
-  Plus,
   Search,
   ChevronDown,
   Download,
   RefreshCw,
   AlertTriangle,
   Info,
-  CheckCircle,
   XCircle,
   Terminal,
 } from 'lucide-react';
@@ -119,7 +113,7 @@ export default function AdminLogs() {
       {/* Summary strip */}
       <div className="grid grid-cols-3 gap-3">
         {SUMMARY.map((s, i) => {
-          const { dot, cls } = LEVEL_MAP[s.level];
+          const { dot } = LEVEL_MAP[s.level];
           return (
             <motion.div
               key={s.level}

@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Briefcase, Plus, Search, X, MoreHorizontal,
+  Briefcase, Plus, Search, MoreHorizontal,
   Eye, EyeOff, Edit2, Trash2, Copy, Star,
-  Building2, Clock, CheckCircle2, ArrowUpRight,
+  Building2, ArrowUpRight,
 } from 'lucide-react';
 
 const ORGS = ['КМБ', 'КГФ', 'БРК', 'БРК-Лизинг', 'KazExport', 'ДБ', 'НАТР'];
@@ -124,7 +124,6 @@ export default function AdminServices() {
   const [orgFilter, setOrg]     = useState('all');
   const [catFilter, setCat]     = useState('all');
   const [statusFilter, setSt]   = useState('all');
-  const [view, setView]         = useState('grid'); // grid | list
 
   const filtered = useMemo(() => services.filter(s => {
     const q = search.toLowerCase();

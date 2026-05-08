@@ -1,25 +1,19 @@
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   FileText,
   Search,
   ChevronDown,
   ChevronRight,
   Download,
-  RefreshCw,
   User,
-  Building2,
   Calendar,
   Clock,
   CheckCircle,
   XCircle,
   AlertCircle,
-  Eye,
   MessageSquare,
   Paperclip,
-  Filter,
-  ArrowUpDown,
-  MoreHorizontal,
 } from 'lucide-react';
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
@@ -273,7 +267,7 @@ export default function AdminApplications() {
       {/* Status cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {SUMMARY_STATS.map((s, i) => {
-          const { label, cls, dot } = STATUS_CONFIG[s.status];
+          const { label, dot } = STATUS_CONFIG[s.status];
           const active = statusFilter === s.status;
           return (
             <motion.div

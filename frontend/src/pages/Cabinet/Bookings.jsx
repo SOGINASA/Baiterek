@@ -4,16 +4,12 @@ import {
   CalendarDays,
   Clock,
   MapPin,
-  Building2,
   Plus,
   ChevronLeft,
   ChevronRight,
   X,
   Check,
   AlertCircle,
-  Phone,
-  User,
-  ChevronDown,
   Ticket,
 } from 'lucide-react';
 

@@ -70,8 +70,8 @@ export default function Footer() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row justify-between items-center gap-3">
           <p className="text-xs text-white/40">© 2025 АО «НИХ «Байтерек». Все права защищены.</p>
           <div className="flex gap-4 text-xs text-white/40">
-            <a href="#" className="hover:text-white/60 transition-colors duration-150">Политика конфиденциальности</a>
-            <a href="#" className="hover:text-white/60 transition-colors duration-150">Условия использования</a>
+            <span className="hover:text-white/60 transition-colors duration-150 cursor-pointer">Политика конфиденциальности</span>
+            <span className="hover:text-white/60 transition-colors duration-150 cursor-pointer">Условия использования</span>
           </div>
         </div>
       </div>

@@ -1,8 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   TrendingUp,
-  TrendingDown,
   Users,
   FileText,
   CheckCircle,
@@ -10,7 +9,6 @@ import {
   BarChart2,
   PieChart,
   Download,
-  CalendarDays,
   ArrowUpRight,
   ArrowDownRight,
   Minus,
@@ -124,7 +122,6 @@ const BarChart = ({ data, period }) => {
 
 // Donut-like horizontal bars for service distribution
 const ServiceDistribution = () => {
-  const total = BY_SERVICE.reduce((a, b) => a + b.value, 0);
   return (
     <div className="space-y-3">
       {/* Stacked bar */}

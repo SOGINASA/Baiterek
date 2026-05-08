@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
-import { useApplicationsStore } from '../../store/applicationsStore';
 import Button from '../ui/Button';
 
 function FieldInput({ field, value, onChange }) {
@@ -44,8 +43,7 @@ function FieldInput({ field, value, onChange }) {
 }
 
 export default function ApplicationForm({ isOpen, onClose, service }) {
-  const { isAuth, user } = useAuthStore();
-  const { createApplication } = useApplicationsStore();
+  const { isAuth } = useAuthStore();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({});
   const [status, setStatus] = useState('idle'); // idle | loading | success | error

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Search, FileText, Check, Clock, Loader2 } from 'lucide-react';
+import { Search, FileText, Check, Clock } from 'lucide-react';
 import { servicesAPI } from '../api/services';
 import { CATEGORIES, SUBSIDIARIES } from '../constants/categories';
 import { formatAmount } from '../utils/formatters';

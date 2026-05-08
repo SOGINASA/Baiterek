@@ -6,7 +6,7 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 
 export default function Profile() {
-  const { user, isAuth, setUser, logout } = useAuthStore();
+  const { user, setUser, logout } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');

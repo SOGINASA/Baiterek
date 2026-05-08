@@ -61,7 +61,7 @@ export default function KnowledgeBase() {
 
   useEffect(() => {
     fetchArticles({ category: activeTab === 'all' ? undefined : activeTab, q: query });
-  }, [activeTab, fetchArticles]);
+  }, [activeTab, query, fetchArticles]);
 
   const filtered = useMemo(() => {
     if (!query) return articles;

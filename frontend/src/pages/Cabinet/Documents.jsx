@@ -6,7 +6,6 @@ import {
   CheckCircle2, Clock, XCircle, ChevronRight,
 } from 'lucide-react';
 import { useApplicationsStore } from '../../store/applicationsStore';
-import Button from '../../components/ui/Button';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 
 const DOC_STATUS = {

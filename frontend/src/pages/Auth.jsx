@@ -148,7 +148,7 @@ export default function Auth() {
 
         <p className="text-center text-xs text-primary/40 mt-6">
           Нажимая «{tab === 'login' ? 'Войти' : 'Создать аккаунт'}», вы принимаете{' '}
-          <a href="#" className="text-accent hover:underline">условия использования</a>
+          <span className="text-accent cursor-pointer hover:underline">условия использования</span>
         </p>
       </motion.div>
     </div>

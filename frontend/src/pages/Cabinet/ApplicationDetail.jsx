@@ -2,8 +2,7 @@ import { useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  FileText, ChevronLeft, Clock, CheckCircle2, XCircle,
-  AlertCircle, Building2, CalendarDays, Download,
+  FileText, ChevronLeft, AlertCircle, Download,
 } from 'lucide-react';
 import { useApplicationsStore } from '../../store/applicationsStore';
 import Button from '../../components/ui/Button';

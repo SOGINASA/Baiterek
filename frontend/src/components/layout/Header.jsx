@@ -81,7 +81,7 @@ export default function Header() {
 
               {/* User avatar */}
               <Link
-                to={ROUTES.CABINET}
+                to={user?.user_type === 'admin' ? '/admin' : ROUTES.CABINET}
                 className="hidden md:flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15
                   text-white text-sm font-medium transition-colors duration-150"
               >
@@ -156,7 +156,7 @@ export default function Header() {
               {isAuth ? (
                 <>
                   <Link
-                    to={ROUTES.CABINET}
+                    to={user?.user_type === 'admin' ? '/admin' : ROUTES.CABINET}
                     onClick={() => setMenuOpen(false)}
                     className="mt-2 px-4 py-3 rounded-xl bg-white/10 text-white text-sm font-medium text-center transition-colors duration-150 hover:bg-white/15 flex items-center justify-center gap-2"
                   >

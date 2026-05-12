@@ -21,7 +21,7 @@ export default function Home() {
 
   const popularServices = useMemo(() => services.filter(s => s.is_popular || s.popular).slice(0, 6), [services]);
   const latestNews = useMemo(() => news.slice(0, 3), [news]);
-// deploy 1
+// deploy 2
   return (
     <div>
       {/* Hero */}

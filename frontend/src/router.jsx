@@ -93,8 +93,8 @@ export const router = createBrowserRouter([
     element: <AdminLayout />,
     children: [
       { index: true,                         element: <AdminDashboard /> },
-      { path: 'admin/forms/new',   element: <FormBuilder /> },
-      { path: 'admin/forms/:id',   element: <FormBuilder /> },
+      { path: 'forms/new',          element: <FormBuilder /> },
+      { path: 'forms/:id',          element: <FormBuilder /> },
       // /admin  →  admin dashboard
       
 

@@ -38,6 +38,7 @@ import AdminAnalytics     from './pages/Admin/Analytics';
 import AdminDirectories   from './pages/Admin/Directories';
 import AdminLogs          from './pages/Admin/Logs';
 import FormBuilder        from './pages/Admin/FormBuilder';
+import AdminForms         from './pages/Admin/Forms';
 
 export const router = createBrowserRouter([
   {
@@ -93,6 +94,7 @@ export const router = createBrowserRouter([
     element: <AdminLayout />,
     children: [
       { index: true,                         element: <AdminDashboard /> },
+      { path: 'forms',              element: <AdminForms /> },
       { path: 'forms/new',          element: <FormBuilder /> },
       { path: 'forms/:id',          element: <FormBuilder /> },
       // /admin  →  admin dashboard

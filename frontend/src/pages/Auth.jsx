@@ -24,12 +24,13 @@ export default function Auth() {
     e.preventDefault();
     setError('');
     try {
+      let data;
       if (tab === 'login') {
-        await login(form.email, form.password);
+        data = await login(form.email, form.password);
       } else {
-        await register(form.email, form.password, form.fullName, form.binNumber);
+        data = await register(form.email, form.password, form.fullName, form.binNumber);
       }
-      navigate('/cabinet');
+      navigate(data?.user?.user_type === 'admin' ? '/admin' : '/cabinet');
     } catch (err) {
       let msg = err.message || 'Ошибка авторизации';
       try { msg = JSON.parse(msg)?.message ?? msg; } catch { /* noop */ }
